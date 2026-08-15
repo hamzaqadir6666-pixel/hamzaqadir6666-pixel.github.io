@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeviceLens — Know your hardware</title>
+<meta name="description" content="DeviceLens is a fast, private Android hardware inspector. See your SoC, GPU, battery, sensors, cameras and more — all read on-device.">
+<style>
+  :root{
+    --bg:#0E1420; --surface:#131C2E; --line:#22304a;
+    --text:#F1F5F9; --muted:#94A3B8; --teal:#2DD4BF; --blue:#3B82F6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       line-height:1.65}
+  .wrap{max-width:760px;margin:0 auto;padding:48px 22px 72px}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:34px}
+  .logo{width:60px;height:60px;flex:none}
+  h1{font-size:31px;margin:0;letter-spacing:-.8px}
+  .tag{color:var(--teal);font-size:15px;margin-top:3px}
+  h2{font-size:19px;margin:38px 0 12px;letter-spacing:-.3px}
+  p{color:#CBD5E1}
+  .card{background:var(--surface);border:1px solid var(--line);
+        border-radius:16px;padding:20px 22px;margin:16px 0}
+  ul{padding-left:20px;color:#CBD5E1;margin:8px 0}
+  li{margin:6px 0}
+  a{color:var(--teal)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin-top:14px}
+  .feat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
+  .feat b{display:block;margin-bottom:3px;font-size:15px}
+  .feat span{color:var(--muted);font-size:13.5px}
+  footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13.5px}
+  .pill{display:inline-block;background:rgba(45,212,191,.13);color:var(--teal);
+        border-radius:999px;padding:4px 12px;font-size:12.5px;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <svg class="logo" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg" aria-label="DeviceLens logo">
+      <defs>
+        <linearGradient id="d" x1="31" y1="31" x2="77" y2="77" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#2DD4BF"/><stop offset="1" stop-color="#3B82F6"/>
+        </linearGradient>
+      </defs>
+      <rect width="108" height="108" rx="24" fill="#131C2E"/>
+      <g fill="#4FD1C5">
+        <rect x="44" y="25.5" width="4" height="6"/><rect x="52" y="25.5" width="4" height="6"/>
+        <rect x="60" y="25.5" width="4" height="6"/><rect x="44" y="76.5" width="4" height="6"/>
+        <rect x="52" y="76.5" width="4" height="6"/><rect x="60" y="76.5" width="4" height="6"/>
+        <rect x="25.5" y="44" width="6" height="4"/><rect x="25.5" y="52" width="6" height="4"/>
+        <rect x="25.5" y="60" width="6" height="4"/><rect x="76.5" y="44" width="6" height="4"/>
+        <rect x="76.5" y="52" width="6" height="4"/><rect x="76.5" y="60" width="6" height="4"/>
+      </g>
+      <rect x="31" y="31" width="46" height="46" rx="7" fill="url(#d)"/>
+      <rect x="39" y="42" width="30" height="24" rx="3" fill="#0E1420"/>
+      <circle cx="54" cy="40.5" r="12" fill="none" stroke="#F8FAFC" stroke-width="4"/>
+      <line x1="62.6" y1="49.2" x2="70" y2="56.6" stroke="#F8FAFC" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>DeviceLens</h1>
+      <div class="tag">Know your hardware.</div>
+    </div>
+  </header>
+
+  <p>
+    DeviceLens is a fast, private Android hardware inspector. It reads your device's
+    real specifications directly from the Android platform and presents them in one
+    clean place — no guesswork, no hardcoded values.
+  </p>
+
+  <div>
+    <span class="pill">Processed on-device</span>
+    <span class="pill">No tracking SDKs</span>
+    <span class="pill">Works offline</span>
+  </div>
+
+  <h2>What it shows</h2>
+  <div class="grid">
+    <div class="feat"><b>SoC &amp; CPU</b><span>Cores, clusters, live clocks and load</span></div>
+    <div class="feat"><b>GPU</b><span>Renderer, OpenGL ES, Vulkan, extensions</span></div>
+    <div class="feat"><b>Battery</b><span>Health, temperature, voltage, current</span></div>
+    <div class="feat"><b>Display</b><span>Resolution, refresh modes, HDR</span></div>
+    <div class="feat"><b>Memory</b><span>RAM, storage, swap and ZRAM</span></div>
+    <div class="feat"><b>Sensors</b><span>Full list plus live testing</span></div>
+    <div class="feat"><b>Network</b><span>Wi‑Fi, mobile and Bluetooth</span></div>
+    <div class="feat"><b>Camera</b><span>Lenses, sensor size, apertures</span></div>
+  </div>
+
+  <h2>Privacy</h2>
+  <div class="card">
+    <p style="margin-top:0">
+      Your hardware information is read and displayed locally. It is never uploaded,
+      sold, or shared with advertisers. DeviceLens contains no analytics or
+      crash-reporting SDK, and never reads your IMEI, serial number, subscriber ID,
+      phone number or Android ID.
+    </p>
+    <p style="margin-bottom:0">
+      The app is free and supported by ads. Read the full
+      <a href="privacy.html">privacy policy</a>.
+    </p>
+  </div>
+
+  <h2>Contact</h2>
+  <p>
+    For support or questions about this app, contact the developer at
+    <a href="mailto:hamzaqadir6666@gmail.com">hamzaqadir6666@gmail.com</a>.
+  </p>
+
+  <footer>
+    &copy; 2026 DeviceLens. DeviceLens is an independent application and is not
+    affiliated with, endorsed by, or derived from any other hardware-information product.
+    <br><br>
+    <a href="app-ads.txt">app-ads.txt</a> &nbsp;·&nbsp;
+    <a href="privacy.html">Privacy policy</a>
+  </footer>
+
+</div>
+</body>
+</html>
