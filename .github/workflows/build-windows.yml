@@ -59,3 +59,40 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: MacWinAnimator/dist/MacWinAnimator.exe
+
+      # Distribution channel: when a PR carries the 'publish-exe' label,
+      # the freshly built EXE is committed to the 'builds' branch so it
+      # can be downloaded directly (github.com/.../raw/refs/heads/builds/
+      # MacWinAnimator.exe) without needing a release.
+      - name: Publish EXE to builds branch (label-gated)
+        if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'publish-exe')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          cd "$RUNNER_TEMP"
+          git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" pub
+          cd pub
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin builds >/dev/null 2>&1; then
+            git fetch --quiet origin builds && git checkout builds
+          else
+            git checkout --orphan builds
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          cp "$GITHUB_WORKSPACE/MacWinAnimator/dist/MacWinAnimator.exe" ./MacWinAnimator.exe
+          cat > README.md <<'EOF'
+          # MacWinAnimator — built EXE
+
+          Download **MacWinAnimator.exe** from this branch and double-click it.
+          It runs in the Windows system tray, next to the clock, and gives
+          Windows the macOS Genie minimize animation.
+
+          Built automatically by GitHub Actions from the `MacWinAnimator`
+          source on the main branch. See that folder's README for details.
+          EOF
+          git add MacWinAnimator.exe README.md
+          git commit -m "Build MacWinAnimator.exe from ${GITHUB_SHA}" || echo "EXE unchanged"
+          git push origin builds
