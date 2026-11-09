@@ -19,11 +19,17 @@ next to the Windows clock** (bottom-right of the taskbar).
 ## Get the app (pick one)
 
 ### Option A — Download the ready-made EXE (easiest)
-1. Go to the repo's **Actions** tab → latest **"Build Windows EXE"** run →
-   download the `MacWinAnimator-exe` artifact — *or* grab `MacWinAnimator.exe`
-   from **Releases** if a release is published.
-2. Double-click `MacWinAnimator.exe`. Done — look for its icon near the clock
-   (click the `^` arrow by the clock if you don't see it).
+**⬇ [Download MacWinAnimator.exe](https://raw.githubusercontent.com/hamzaqadir6666-pixel/hamzaqadir6666-pixel.github.io/builds/MacWinAnimator.exe)** (31 MB, Windows 10/11 x64)
+
+The EXE is built automatically from this source by GitHub Actions on a
+Windows runner and stored on the repo's `builds` branch (you can also get
+it from the latest "Build Windows EXE" run in the **Actions** tab, artifact
+`MacWinAnimator-exe`).
+
+1. Download and double-click `MacWinAnimator.exe`. If Windows SmartScreen
+   asks, choose *More info → Run anyway* (unsigned open-source app).
+2. Done — look for its icon near the clock (click the `^` arrow by the
+   clock if you don't see it).
 
 ### Option B — Build the EXE yourself (one click)
 1. Install [Python 3.10+](https://www.python.org/downloads/) (tick
