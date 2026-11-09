@@ -1,0 +1,35 @@
+"""Windows-only smoke test (runs in CI on windows-latest).
+
+Reproduces the EXE's exact import graph on a real Windows Python so
+import-time crashes in the Win32 layer (like the v1.0.0 HCURSOR bug)
+fail the build instead of reaching users.  Skipped everywhere else.
+"""
+import sys
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    not sys.platform.startswith("win"), reason="Windows-only smoke test")
+
+
+def test_win32_modules_import_cleanly():
+    import macwin.animator  # noqa: F401  (imports overlay + capture)
+    import macwin.capture  # noqa: F401
+    import macwin.hook  # noqa: F401
+    import macwin.overlay  # noqa: F401
+    import macwin.tray  # noqa: F401
+    import macwin.winapi  # noqa: F401
+    assert macwin.winapi.IS_WINDOWS
+
+
+def test_overlay_structs_are_well_formed():
+    from macwin import overlay
+    # constructing the structs proves every _fields_ entry resolved
+    overlay.WNDCLASS()
+    overlay.BLENDFUNCTION()
+    overlay.BITMAPINFO()
+
+
+def test_hook_callback_type_exists():
+    from macwin import hook
+    assert hook.WINEVENTPROC is not None
