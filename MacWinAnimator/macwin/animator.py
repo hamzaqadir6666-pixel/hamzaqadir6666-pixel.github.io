@@ -188,12 +188,10 @@ class Animator:
 
     def _self_test_thread(self) -> None:
         lines = ["MacWinAnimator self-test", ""]
-        # 1) capture
+        # 1) capture: try the largest real app windows, report exact errors
         try:
-            fg = winapi.user32.GetForegroundWindow()
-            img = capture.capture_window(int(fg)) if fg else None
-            lines.append(f"[{'OK' if img else 'FAIL'}] Screenshot a window "
-                         f"(foreground hwnd={fg})")
+            img, detail = self._self_test_capture()
+            lines.append(f"[{'OK' if img else 'FAIL'}] Screenshot a window — {detail}")
         except Exception as exc:
             img = None
             lines.append(f"[FAIL] Screenshot a window — {exc!r}")
@@ -220,6 +218,41 @@ class Animator:
                       "log for each minimize event."]
         winapi.message_box("\n".join(lines), "MacWinAnimator self-test")
         log.info("self-test done:\n%s", "\n".join(lines))
+
+    def _self_test_capture(self):
+        """Try to screenshot the biggest visible app windows.
+        Returns (image, human-readable detail)."""
+        import ctypes
+        from ctypes import wintypes
+
+        candidates: list[tuple[int, int]] = []  # (area, hwnd)
+        ENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+        def _enum(hwnd, _lparam):
+            try:
+                if (winapi.is_window_visible(hwnd)
+                        and not winapi.is_iconic(hwnd)
+                        and not winapi.is_tool_window(hwnd)):
+                    r = winapi.get_window_rect(hwnd)
+                    area = max(0, r[2] - r[0]) * max(0, r[3] - r[1])
+                    if area > 200 * 150:
+                        candidates.append((area, hwnd))
+            except Exception:
+                pass
+            return True
+
+        winapi.user32.EnumWindows(ENUMPROC(_enum), 0)
+        candidates.sort(reverse=True)
+        if not candidates:
+            return None, "no visible app windows found"
+        errors = []
+        for _area, hwnd in candidates[:5]:
+            image, error = capture.capture_window_detailed(hwnd)
+            title = _title(hwnd)
+            if image is not None:
+                return image, f"captured {image.size[0]}x{image.size[1]} from {title!r}"
+            errors.append(f"{title!r}: {error}")
+        return None, "all failed — " + "; ".join(errors[:3])
 
     # -- claim / dedupe ---------------------------------------------------------
     def _claim(self, hwnd: int, kind: str) -> bool:

@@ -90,7 +90,7 @@ if winapi.IS_WINDOWS:
     gdi32.CreateCompatibleDC.argtypes = [_HDC]
     gdi32.DeleteDC.argtypes = [_HDC]
     gdi32.CreateDIBSection.argtypes = [
-        _HDC, ctypes.c_void_p, wintypes.UINT,
+        _HDC, ctypes.POINTER(BITMAPINFO), wintypes.UINT,
         ctypes.POINTER(ctypes.c_void_p), wintypes.HANDLE, wintypes.DWORD]
     gdi32.SelectObject.argtypes = [_HDC, wintypes.HGDIOBJ]
     gdi32.SelectObject.restype = wintypes.HGDIOBJ
@@ -150,14 +150,25 @@ class LayeredOverlay:
         self.left, self.top, self.right, self.bottom = bbox
         self.width = self.right - self.left
         self.height = self.bottom - self.top
+        self._ulw_error_logged = False
         ex = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW
         self.hwnd = user32.CreateWindowExW(
             ex, OVERLAY_CLASS, "", WS_POPUP,
             self.left, self.top, self.width, self.height,
             None, None, winapi.kernel32.GetModuleHandleW(None), None)
         if not self.hwnd:
-            raise ctypes.WinError()
+            raise ctypes.WinError(ctypes.get_last_error())
         user32.ShowWindow(self.hwnd, SW_SHOW)
+
+    def pump_messages(self) -> None:
+        """Keep this thread's window responsive while animating —
+        a window whose thread never retrieves messages can be
+        ghosted or treated as hung by Windows."""
+        msg = wintypes.MSG()
+        PM_REMOVE = 0x0001
+        while user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, PM_REMOVE):
+            user32.TranslateMessage(ctypes.byref(msg))
+            user32.DispatchMessageW(ctypes.byref(msg))
 
     def show_frame(self, image) -> None:
         """Push one RGBA Pillow frame (sized exactly to the overlay)."""

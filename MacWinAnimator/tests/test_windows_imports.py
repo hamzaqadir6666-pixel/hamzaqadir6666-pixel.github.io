@@ -48,3 +48,20 @@ def test_overlay_prototypes_declared():
     assert overlay.user32.CreateWindowExW.argtypes is not None
     assert overlay.user32.UpdateLayeredWindow.argtypes is not None
     assert overlay.user32.UpdateLayeredWindow.restype is not None
+
+
+def test_overlay_class_has_pump_messages():
+    """The v1.1.0 EXE crashed the self-test on exactly this."""
+    from macwin.overlay import LayeredOverlay
+    assert callable(getattr(LayeredOverlay, "pump_messages", None))
+    assert callable(getattr(LayeredOverlay, "show_frame", None))
+
+
+def test_capture_of_desktop_window():
+    """End-to-end on the Windows runner: screenshot the desktop shell
+    window (always present) and require real pixels back."""
+    from macwin import capture, winapi
+    hwnd = winapi.user32.GetDesktopWindow()
+    image, error = capture.capture_window_detailed(int(hwnd))
+    assert image is not None, f"desktop capture failed: {error}"
+    assert image.size[0] > 100 and image.size[1] > 100
