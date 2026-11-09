@@ -49,14 +49,22 @@ if winapi.IS_WINDOWS:
     # 64-bit-safe handle return types
     user32.CreateWindowExW.restype = wintypes.HWND
     user32.GetDC.restype = wintypes.HDC
+    user32.DefWindowProcW.restype = ctypes.c_ssize_t
     gdi32.CreateCompatibleDC.restype = wintypes.HDC
     gdi32.CreateDIBSection.restype = wintypes.HBITMAP
+
+    # ctypes.wintypes does NOT define every handle type — notably there
+    # is no wintypes.HCURSOR, and referencing it crashes at import time
+    # on Windows. All Win32 handles are pointers, so define them locally.
+    HICON = ctypes.c_void_p
+    HCURSOR = ctypes.c_void_p
+    HBRUSH = ctypes.c_void_p
 
     class WNDCLASS(ctypes.Structure):
         _fields_ = [("style", wintypes.UINT), ("lpfnWndProc", WNDPROC),
                     ("cbClsExtra", ctypes.c_int), ("cbWndExtra", ctypes.c_int),
-                    ("hInstance", wintypes.HINSTANCE), ("hIcon", wintypes.HICON),
-                    ("hCursor", wintypes.HCURSOR), ("hbrBackground", wintypes.HBRUSH),
+                    ("hInstance", wintypes.HINSTANCE), ("hIcon", HICON),
+                    ("hCursor", HCURSOR), ("hbrBackground", HBRUSH),
                     ("lpszMenuName", wintypes.LPCWSTR), ("lpszClassName", wintypes.LPCWSTR)]
 
     _wndproc_ref = None
