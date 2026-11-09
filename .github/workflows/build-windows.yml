@@ -1,0 +1,98 @@
+name: Build Windows EXE
+
+# Builds MacWinAnimator.exe on a real Windows runner so anyone can
+# download a ready-to-run app without installing Python.
+# - Automatic: whenever the app code changes on main
+# - Manual:    Actions tab -> "Build Windows EXE" -> Run workflow
+# - Release:   pushing a tag like v1.0.0 also attaches the EXE to a release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "MacWinAnimator/**"
+      - ".github/workflows/build-windows.yml"
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+    paths:
+      - "MacWinAnimator/**"
+      - ".github/workflows/build-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: MacWinAnimator
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller pytest
+
+      - name: Run tests
+        run: python -m pytest tests/ -q
+
+      - name: Build MacWinAnimator.exe
+        run: python -m PyInstaller --noconfirm --clean MacWinAnimator.spec
+
+      - name: Upload EXE as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MacWinAnimator-exe
+          path: MacWinAnimator/dist/MacWinAnimator.exe
+          if-no-files-found: error
+
+      - name: Attach EXE to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MacWinAnimator/dist/MacWinAnimator.exe
+
+      # Distribution channel: when a PR carries the 'publish-exe' label,
+      # the freshly built EXE is committed to the 'builds' branch so it
+      # can be downloaded directly (github.com/.../raw/refs/heads/builds/
+      # MacWinAnimator.exe) without needing a release.
+      - name: Publish EXE to builds branch (label-gated)
+        if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'publish-exe')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          cd "$RUNNER_TEMP"
+          git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" pub
+          cd pub
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin builds >/dev/null 2>&1; then
+            git fetch --quiet origin builds && git checkout builds
+          else
+            git checkout --orphan builds
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          cp "$GITHUB_WORKSPACE/MacWinAnimator/dist/MacWinAnimator.exe" ./MacWinAnimator.exe
+          cat > README.md <<'EOF'
+          # MacWinAnimator — built EXE
+
+          Download **MacWinAnimator.exe** from this branch and double-click it.
+          It runs in the Windows system tray, next to the clock, and gives
+          Windows the macOS Genie minimize animation.
+
+          Built automatically by GitHub Actions from the `MacWinAnimator`
+          source on the main branch. See that folder's README for details.
+          EOF
+          git add MacWinAnimator.exe README.md
+          git commit -m "Build MacWinAnimator.exe from ${GITHUB_SHA}" || echo "EXE unchanged"
+          git push origin builds
