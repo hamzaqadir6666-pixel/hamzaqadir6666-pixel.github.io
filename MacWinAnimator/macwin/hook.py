@@ -72,8 +72,10 @@ class WindowEventHook:
                 return
             try:
                 if event == EVENT_SYSTEM_MINIMIZESTART:
+                    log.info("event: minimize start hwnd=%s", hwnd)
                     self.on_minimize(hwnd)
                 elif event == EVENT_SYSTEM_MINIMIZEEND:
+                    log.info("event: minimize end hwnd=%s", hwnd)
                     self.on_restore(hwnd)
             except Exception:
                 log.exception("event handler failed")
@@ -84,8 +86,9 @@ class WindowEventHook:
             hook = user32.SetWinEventHook(lo, hi, None, self._proc_ref, 0, 0, flags)
             if hook:
                 self._hooks.append(hook)
+                log.info("minimize/restore hook installed (handle=%s)", hook)
             else:
-                log.error("SetWinEventHook failed: %s", ctypes.get_last_error())
+                log.error("SetWinEventHook failed, err=%s", ctypes.get_last_error())
 
         msg = wintypes.MSG()
         while self._running and user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:

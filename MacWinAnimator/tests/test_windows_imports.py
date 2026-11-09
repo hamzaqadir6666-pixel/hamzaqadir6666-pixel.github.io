@@ -33,3 +33,18 @@ def test_overlay_structs_are_well_formed():
 def test_hook_callback_type_exists():
     from macwin import hook
     assert hook.WINEVENTPROC is not None
+
+
+def test_windowplacement_struct_is_well_formed():
+    from macwin import winapi
+    wp = winapi.WINDOWPLACEMENT()
+    wp.length = __import__("ctypes").sizeof(winapi.WINDOWPLACEMENT)
+    assert wp.rcNormalPosition.right == 0
+
+
+def test_overlay_prototypes_declared():
+    from macwin import overlay
+    # declared argtypes are what keep 64-bit/unsigned values correct
+    assert overlay.user32.CreateWindowExW.argtypes is not None
+    assert overlay.user32.UpdateLayeredWindow.argtypes is not None
+    assert overlay.user32.UpdateLayeredWindow.restype is not None

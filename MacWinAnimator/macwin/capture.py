@@ -23,13 +23,16 @@ if winapi.IS_WINDOWS:
     winapi.gdi32.CreateCompatibleBitmap.restype = _wt.HBITMAP
 
 
-def capture_window(hwnd: int):
+def capture_window(hwnd: int, rect_override=None):
+    """``rect_override`` supplies geometry for minimized windows whose
+    live rect is the off-screen parking spot (see winapi.get_normal_rect)."""
     if not winapi.IS_WINDOWS:
         return None
     user32, gdi32 = winapi.user32, winapi.gdi32
-    left, top, right, bottom = winapi.get_window_rect(hwnd)
+    left, top, right, bottom = rect_override or winapi.get_window_rect(hwnd)
     width, height = right - left, bottom - top
     if width <= 10 or height <= 10:
+        log.info("capture %s: bad size %sx%s", hwnd, width, height)
         return None
 
     hwnd_dc = user32.GetWindowDC(wintypes.HWND(hwnd))
@@ -62,6 +65,8 @@ def capture_window(hwnd: int):
         buf = ctypes.create_string_buffer(width * height * 4)
         got = gdi32.GetDIBits(mem_dc, bitmap, 0, height, buf, ctypes.byref(bmi), 0)
         if not got:
+            log.info("capture %s: GetDIBits failed, err=%s",
+                     hwnd, ctypes.get_last_error())
             return None
         from PIL import Image
         img = Image.frombuffer("RGBA", (width, height), buf, "raw", "BGRA", 0, 1).copy()

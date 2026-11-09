@@ -107,6 +107,20 @@ class AppController:
     def test_animation(self) -> None:
         self.animator.test_animation()
 
+    def run_self_test(self) -> None:
+        self.animator.run_self_test()
+
+    def open_log(self) -> None:
+        import os
+        logfile = config_dir() / "macwinanimator.log"
+        try:
+            if logfile.exists():
+                os.startfile(str(logfile))  # type: ignore[attr-defined]
+            else:
+                winapi.message_box(f"No log file yet at:\n{logfile}")
+        except Exception:
+            log.exception("could not open log file")
+
     def refresh_tray(self) -> None:
         self.tray.refresh()
 

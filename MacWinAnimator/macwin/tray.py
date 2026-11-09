@@ -58,6 +58,9 @@ class TrayApp:
             pystray.MenuItem("Start with Windows", lambda *_: self._toggle_autostart(),
                              checked=lambda _i: self.controller.get_config().start_with_windows),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Run self-test", lambda *_: self.controller.run_self_test()),
+            pystray.MenuItem("Open log file", lambda *_: self.controller.open_log()),
+            pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit MacWinAnimator", lambda *_: self.controller.quit()),
         )
         self._icon = pystray.Icon(

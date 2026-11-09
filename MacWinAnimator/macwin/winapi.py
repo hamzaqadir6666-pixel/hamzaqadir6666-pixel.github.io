@@ -39,6 +39,26 @@ if IS_WINDOWS:
     kernel32.CreateMutexW.restype = wintypes.HANDLE
     kernel32.GetModuleHandleW.restype = wintypes.HMODULE
 
+    class WINDOWPLACEMENT(ctypes.Structure):
+        _fields_ = [("length", wintypes.UINT), ("flags", wintypes.UINT),
+                    ("showCmd", wintypes.UINT), ("ptMinPosition", wintypes.POINT),
+                    ("ptMaxPosition", wintypes.POINT), ("rcNormalPosition", RECT)]
+
+    user32.GetWindowPlacement.argtypes = [wintypes.HWND, ctypes.POINTER(WINDOWPLACEMENT)]
+    user32.GetWindowPlacement.restype = wintypes.BOOL
+
+    def get_normal_rect(hwnd: int):
+        """The window's restored (non-minimized) position/size — the
+        real geometry of a window that is currently minimized and
+        parked off-screen at (-32000, -32000)."""
+        wp = WINDOWPLACEMENT()
+        wp.length = ctypes.sizeof(WINDOWPLACEMENT)
+        if user32.GetWindowPlacement(wintypes.HWND(hwnd), ctypes.byref(wp)):
+            r = wp.rcNormalPosition
+            if r.right - r.left > 0:
+                return r.as_tuple()
+        return get_window_rect(hwnd)
+
     # --- window geometry ------------------------------------------------
     DWMWA_EXTENDED_FRAME_BOUNDS = 9
 

@@ -67,6 +67,35 @@ if winapi.IS_WINDOWS:
                     ("hCursor", HCURSOR), ("hbrBackground", HBRUSH),
                     ("lpszMenuName", wintypes.LPCWSTR), ("lpszClassName", wintypes.LPCWSTR)]
 
+    # Declared prototypes: correct 64-bit/unsigned conversions for every
+    # call on the overlay path (no reliance on ctypes' default int).
+    _HWND, _HDC = wintypes.HWND, wintypes.HDC
+    user32.CreateWindowExW.argtypes = [
+        wintypes.DWORD, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD,
+        ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        _HWND, wintypes.HMENU, wintypes.HINSTANCE, wintypes.LPVOID]
+    user32.RegisterClassW.argtypes = [ctypes.POINTER(WNDCLASS)]
+    user32.RegisterClassW.restype = wintypes.ATOM
+    user32.ShowWindow.argtypes = [_HWND, ctypes.c_int]
+    user32.DestroyWindow.argtypes = [_HWND]
+    user32.UpdateLayeredWindow.argtypes = [
+        _HWND, _HDC, ctypes.POINTER(wintypes.POINT),
+        ctypes.POINTER(wintypes.SIZE), _HDC, ctypes.POINTER(wintypes.POINT),
+        wintypes.COLORREF, ctypes.POINTER(BLENDFUNCTION), wintypes.DWORD]
+    user32.UpdateLayeredWindow.restype = wintypes.BOOL
+    user32.DefWindowProcW.argtypes = [
+        _HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.GetDC.argtypes = [_HWND]
+    user32.ReleaseDC.argtypes = [_HWND, _HDC]
+    gdi32.CreateCompatibleDC.argtypes = [_HDC]
+    gdi32.DeleteDC.argtypes = [_HDC]
+    gdi32.CreateDIBSection.argtypes = [
+        _HDC, ctypes.c_void_p, wintypes.UINT,
+        ctypes.POINTER(ctypes.c_void_p), wintypes.HANDLE, wintypes.DWORD]
+    gdi32.SelectObject.argtypes = [_HDC, wintypes.HGDIOBJ]
+    gdi32.SelectObject.restype = wintypes.HGDIOBJ
+    gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+
     _wndproc_ref = None
     _class_registered = False
 
@@ -82,7 +111,11 @@ if winapi.IS_WINDOWS:
         wc.lpfnWndProc = _wndproc_ref
         wc.hInstance = winapi.kernel32.GetModuleHandleW(None)
         wc.lpszClassName = OVERLAY_CLASS
-        user32.RegisterClassW(ctypes.byref(wc))
+        atom = user32.RegisterClassW(ctypes.byref(wc))
+        if not atom:
+            err = ctypes.get_last_error()
+            if err != 1410:  # ERROR_CLASS_ALREADY_EXISTS is harmless
+                raise ctypes.WinError(err)
         _class_registered = True
 
     def _premultiply(image):
@@ -153,10 +186,14 @@ class LayeredOverlay:
             size = wintypes.SIZE(self.width, self.height)
             src = wintypes.POINT(0, 0)
             blend = BLENDFUNCTION(AC_SRC_OVER, 0, 255, AC_SRC_ALPHA)
-            user32.UpdateLayeredWindow(
+            ok = user32.UpdateLayeredWindow(
                 wintypes.HWND(self.hwnd), screen_dc, ctypes.byref(pos),
                 ctypes.byref(size), mem_dc, ctypes.byref(src), 0,
                 ctypes.byref(blend), ULW_ALPHA)
+            if not ok and not self._ulw_error_logged:
+                self._ulw_error_logged = True
+                log.error("UpdateLayeredWindow failed, err=%s",
+                          ctypes.get_last_error())
         finally:
             gdi32.SelectObject(mem_dc, old)
             gdi32.DeleteObject(bitmap)
