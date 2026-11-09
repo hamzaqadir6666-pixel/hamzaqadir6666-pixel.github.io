@@ -1,0 +1,7 @@
+# MacWinAnimator runtime dependencies (Windows 10/11, Python 3.10+)
+# Everything else — Win32 hooks, tray plumbing, registry — is done with
+# ctypes and the standard library, so there is no pywin32 to install.
+Pillow>=10.0
+pystray>=0.19
+# numpy is optional: if present, overlay frames are composited faster.
+numpy>=1.24
