@@ -13,6 +13,11 @@ on:
       - "MacWinAnimator/**"
       - ".github/workflows/build-windows.yml"
     tags: ["v*"]
+  pull_request:
+    branches: [main]
+    paths:
+      - "MacWinAnimator/**"
+      - ".github/workflows/build-windows.yml"
   workflow_dispatch:
 
 permissions:
