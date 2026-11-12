@@ -1,0 +1,48 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/terrain.gdshader" id="1_h7qy2"]
+[ext_resource type="Texture2D" path="res://textures/terrain/dirt_albedo.jpg" id="2_fqmm1"]
+[ext_resource type="Texture2D" path="res://textures/terrain/dirt_normal.jpg" id="3_e4fgo"]
+[ext_resource type="Texture2D" path="res://textures/terrain/forest_floor_albedo.jpg" id="4_82ek3"]
+[ext_resource type="Texture2D" path="res://textures/terrain/forest_floor_normal.jpg" id="5_g6n5o"]
+[ext_resource type="Texture2D" path="res://textures/terrain/grass_albedo.jpg" id="6_ohiqj"]
+[ext_resource type="Texture2D" path="res://textures/terrain/grass_normal.jpg" id="7_tjt44"]
+[ext_resource type="Texture2D" path="res://textures/terrain/mud_albedo.jpg" id="8_5cayw"]
+[ext_resource type="Texture2D" path="res://textures/terrain/mud_normal.jpg" id="9_fr5st"]
+[ext_resource type="Texture2D" path="res://textures/terrain/rock_albedo.jpg" id="10_ynt8t"]
+[ext_resource type="Texture2D" path="res://textures/terrain/rock_normal.jpg" id="11_51txv"]
+[ext_resource type="Texture2D" path="res://textures/terrain/sand_albedo.jpg" id="12_3b634"]
+[ext_resource type="Texture2D" path="res://textures/terrain/sand_normal.jpg" id="13_ba3fr"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_6omoi"]
+frequency = 0.012
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_tppvj"]
+width = 256
+height = 256
+noise = SubResource("FastNoiseLite_6omoi")
+seamless = true
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_h7qy2")
+shader_parameter/world_size = 1024.0
+shader_parameter/cell_size = 2.0
+shader_parameter/grass_albedo = ExtResource("6_ohiqj")
+shader_parameter/grass_normal = ExtResource("7_tjt44")
+shader_parameter/forest_albedo = ExtResource("4_82ek3")
+shader_parameter/forest_normal = ExtResource("5_g6n5o")
+shader_parameter/dirt_albedo = ExtResource("2_fqmm1")
+shader_parameter/dirt_normal = ExtResource("3_e4fgo")
+shader_parameter/mud_albedo = ExtResource("8_5cayw")
+shader_parameter/mud_normal = ExtResource("9_fr5st")
+shader_parameter/rock_albedo = ExtResource("10_ynt8t")
+shader_parameter/rock_normal = ExtResource("11_51txv")
+shader_parameter/sand_albedo = ExtResource("12_3b634")
+shader_parameter/sand_normal = ExtResource("13_ba3fr")
+shader_parameter/macro_noise = SubResource("NoiseTexture2D_tppvj")
+shader_parameter/uv_scale = null
+shader_parameter/normal_strength = null
+shader_parameter/grass_tint = null
+shader_parameter/wet_darkening = null

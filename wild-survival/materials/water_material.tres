@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/water.gdshader" id="1_ngiwl"]
+[ext_resource type="Texture2D" path="res://textures/water/water_normal_1.png" id="2_4vjy3"]
+[ext_resource type="Texture2D" path="res://textures/water/water_normal_3.png" id="3_207j0"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_ngiwl")
+shader_parameter/normal_a = ExtResource("2_4vjy3")
+shader_parameter/normal_b = ExtResource("3_207j0")
+shader_parameter/shallow_color = null
+shader_parameter/deep_color = null
+shader_parameter/depth_fade = null
+shader_parameter/clarity = null
+shader_parameter/wave_scale = null
+shader_parameter/flow = null
+shader_parameter/refraction = null
+shader_parameter/foam_width = null
+shader_parameter/night_factor = null

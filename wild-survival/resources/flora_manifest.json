@@ -1,0 +1,1625 @@
+{
+ "trees": [
+  {
+   "name": "banyan_0",
+   "tris": 642,
+   "min": [
+    -7.83,
+    -2.84,
+    -8.1
+   ],
+   "max": [
+    7.56,
+    9.9,
+    8.5
+   ],
+   "surfaces": [
+    "gaia/banyan_trunk_1.png",
+    "gaia/banyan_leaves_1.png"
+   ],
+   "path": "res://models/environment/trees/banyan_0.glb"
+  },
+  {
+   "name": "banyan_1",
+   "tris": 396,
+   "min": [
+    -6.64,
+    -3.21,
+    -6.65
+   ],
+   "max": [
+    5.97,
+    7.05,
+    5.48
+   ],
+   "surfaces": [
+    "gaia/banyan_trunk_1.png",
+    "gaia/banyan_leaves_1.png"
+   ],
+   "path": "res://models/environment/trees/banyan_1.glb"
+  },
+  {
+   "name": "strangler_0",
+   "tris": 350,
+   "min": [
+    -5.34,
+    -2.72,
+    -4.68
+   ],
+   "max": [
+    4.76,
+    14.9,
+    6.1
+   ],
+   "surfaces": [
+    "gaia/banyan_trunk_1.png",
+    "gaia/banyan_leaves_1.png"
+   ],
+   "path": "res://models/environment/trees/strangler_0.glb"
+  },
+  {
+   "name": "strangler_1",
+   "tris": 411,
+   "min": [
+    -5.15,
+    -2.38,
+    -5.79
+   ],
+   "max": [
+    7.71,
+    17.58,
+    6.6
+   ],
+   "surfaces": [
+    "gaia/banyan_trunk_1.png",
+    "gaia/banyan_leaves_1.png"
+   ],
+   "path": "res://models/environment/trees/strangler_1.glb"
+  },
+  {
+   "name": "teak_0",
+   "tris": 200,
+   "min": [
+    -6.39,
+    -1.41,
+    -5.77
+   ],
+   "max": [
+    6.43,
+    15.45,
+    6.79
+   ],
+   "surfaces": [
+    "gaia/teak_trunk.png",
+    "gaia/teak.png"
+   ],
+   "path": "res://models/environment/trees/teak_0.glb"
+  },
+  {
+   "name": "teak_1",
+   "tris": 188,
+   "min": [
+    -5.77,
+    -0.98,
+    -6.8
+   ],
+   "max": [
+    6.08,
+    13.88,
+    5.52
+   ],
+   "surfaces": [
+    "gaia/teak_trunk.png",
+    "gaia/teak.png"
+   ],
+   "path": "res://models/environment/trees/teak_1.glb"
+  },
+  {
+   "name": "tree_tropic_0",
+   "tris": 144,
+   "min": [
+    -4.7,
+    -0.01,
+    -4.82
+   ],
+   "max": [
+    4.13,
+    11.21,
+    4.32
+   ],
+   "surfaces": [
+    "gaia/trunk_deciduous_b.dds",
+    "gaia/poplar_a.dds"
+   ],
+   "path": "res://models/environment/trees/tree_tropic_0.glb"
+  },
+  {
+   "name": "tree_tropic_1",
+   "tris": 144,
+   "min": [
+    -6.75,
+    -0.01,
+    -4.82
+   ],
+   "max": [
+    5.24,
+    11.21,
+    5.13
+   ],
+   "surfaces": [
+    "gaia/trunk_deciduous_b.dds",
+    "gaia/poplar_b.dds"
+   ],
+   "path": "res://models/environment/trees/tree_tropic_1.glb"
+  },
+  {
+   "name": "tree_tropic_2",
+   "tris": 144,
+   "min": [
+    -6.75,
+    -0.01,
+    -4.82
+   ],
+   "max": [
+    5.24,
+    11.21,
+    5.13
+   ],
+   "surfaces": [
+    "gaia/trunk_deciduous_b.dds",
+    "gaia/poplar_a.dds"
+   ],
+   "path": "res://models/environment/trees/tree_tropic_2.glb"
+  },
+  {
+   "name": "tropic_forest_biome_tree_0",
+   "tris": 584,
+   "min": [
+    -3.98,
+    -0.41,
+    -4.35
+   ],
+   "max": [
+    4.41,
+    9.5,
+    4.18
+   ],
+   "surfaces": [
+    "gaia/tropic_deciduous_05.png"
+   ],
+   "path": "res://models/environment/trees/tropic_forest_biome_tree_0.glb"
+  },
+  {
+   "name": "tropic_forest_biome_tree_1",
+   "tris": 655,
+   "min": [
+    -3.03,
+    -0.29,
+    -4.2
+   ],
+   "max": [
+    3.81,
+    11.33,
+    3.83
+   ],
+   "surfaces": [
+    "gaia/tropic_deciduous_05.png"
+   ],
+   "path": "res://models/environment/trees/tropic_forest_biome_tree_1.glb"
+  },
+  {
+   "name": "tropic_forest_biome_tree_2",
+   "tris": 560,
+   "min": [
+    -2.85,
+    -0.06,
+    -2.73
+   ],
+   "max": [
+    2.43,
+    6.64,
+    3.01
+   ],
+   "surfaces": [
+    "gaia/tropic_deciduous_05.png"
+   ],
+   "path": "res://models/environment/trees/tropic_forest_biome_tree_2.glb"
+  },
+  {
+   "name": "tropic_forest_biome_tree_3",
+   "tris": 620,
+   "min": [
+    -4.47,
+    -0.12,
+    -5.13
+   ],
+   "max": [
+    3.23,
+    6.26,
+    4.08
+   ],
+   "surfaces": [
+    "gaia/tropic_deciduous_05.png"
+   ],
+   "path": "res://models/environment/trees/tropic_forest_biome_tree_3.glb"
+  },
+  {
+   "name": "fig_0",
+   "tris": 722,
+   "min": [
+    -4.5,
+    -1.55,
+    -4.69
+   ],
+   "max": [
+    4.81,
+    8.73,
+    4.56
+   ],
+   "surfaces": [
+    "gaia/trunk_baobab.dds",
+    "gaia/tree_carob_a.dds"
+   ],
+   "path": "res://models/environment/trees/fig_0.glb"
+  },
+  {
+   "name": "fig_1",
+   "tris": 722,
+   "min": [
+    -4.49,
+    -1.13,
+    -4.86
+   ],
+   "max": [
+    4.75,
+    7.43,
+    5.5
+   ],
+   "surfaces": [
+    "gaia/trunk_baobab.dds",
+    "gaia/tree_carob_b.dds"
+   ],
+   "path": "res://models/environment/trees/fig_1.glb"
+  },
+  {
+   "name": "oak_large_0",
+   "tris": 129,
+   "min": [
+    -4.93,
+    0.04,
+    -3.85
+   ],
+   "max": [
+    4.36,
+    10.39,
+    4.39
+   ],
+   "surfaces": [
+    "gaia/trunk_deciduous_b.dds",
+    "gaia/tree_euro_beech_a.dds"
+   ],
+   "path": "res://models/environment/trees/oak_large_0.glb"
+  },
+  {
+   "name": "oak_large_1",
+   "tris": 95,
+   "min": [
+    -4.84,
+    0.0,
+    -4.51
+   ],
+   "max": [
+    4.61,
+    8.67,
+    4.52
+   ],
+   "surfaces": [
+    "gaia/trunk_deciduous_b.dds",
+    "gaia/tree_euro_beech_a.dds"
+   ],
+   "path": "res://models/environment/trees/oak_large_1.glb"
+  },
+  {
+   "name": "baobab_new",
+   "tris": 848,
+   "min": [
+    -8.64,
+    -1.61,
+    -8.29
+   ],
+   "max": [
+    6.37,
+    11.65,
+    7.46
+   ],
+   "surfaces": [
+    "gaia/tree_baobab_trunk.png",
+    "gaia/tree_baobab_dead.png",
+    "gaia/tree_baobab.png"
+   ],
+   "path": "res://models/environment/trees/baobab_new.glb"
+  },
+  {
+   "name": "mangrove_0",
+   "tris": 120,
+   "min": [
+    -3.0,
+    -3.5,
+    -2.79
+   ],
+   "max": [
+    2.82,
+    5.54,
+    3.1
+   ],
+   "surfaces": [
+    "gaia/mangrove_roots_1.png",
+    "gaia/mangrove_1.png"
+   ],
+   "path": "res://models/environment/trees/mangrove_0.glb"
+  },
+  {
+   "name": "mangrove_1",
+   "tris": 216,
+   "min": [
+    -3.43,
+    -3.5,
+    -3.31
+   ],
+   "max": [
+    3.41,
+    5.37,
+    3.61
+   ],
+   "surfaces": [
+    "gaia/mangrove_roots_2.png",
+    "gaia/mangrove_2.png"
+   ],
+   "path": "res://models/environment/trees/mangrove_1.glb"
+  }
+ ],
+ "palms": [
+  {
+   "name": "palm_tropical_0",
+   "tris": 940,
+   "min": [
+    -3.11,
+    -0.0,
+    -3.01
+   ],
+   "max": [
+    3.08,
+    12.49,
+    3.09
+   ],
+   "surfaces": [
+    "gaia/tree_palm_2_a.png"
+   ],
+   "path": "res://models/environment/palms/palm_tropical_0.glb"
+  },
+  {
+   "name": "palm_tropical_1",
+   "tris": 940,
+   "min": [
+    -6.78,
+    -0.0,
+    -6.08
+   ],
+   "max": [
+    0.29,
+    9.58,
+    0.29
+   ],
+   "surfaces": [
+    "gaia/tree_palm_2_a.png"
+   ],
+   "path": "res://models/environment/palms/palm_tropical_1.glb"
+  },
+  {
+   "name": "palm_tropical_2",
+   "tris": 1880,
+   "min": [
+    -0.55,
+    -0.08,
+    -1.95
+   ],
+   "max": [
+    7.24,
+    7.74,
+    8.69
+   ],
+   "surfaces": [
+    "gaia/tree_palm_2_a.png"
+   ],
+   "path": "res://models/environment/palms/palm_tropical_2.glb"
+  },
+  {
+   "name": "palm_tropical_3",
+   "tris": 1880,
+   "min": [
+    -3.34,
+    -0.0,
+    -4.83
+   ],
+   "max": [
+    3.3,
+    12.82,
+    3.5
+   ],
+   "surfaces": [
+    "gaia/tree_palm_2_a.png"
+   ],
+   "path": "res://models/environment/palms/palm_tropical_3.glb"
+  },
+  {
+   "name": "palm_tropical_tall_0",
+   "tris": 988,
+   "min": [
+    -2.73,
+    -0.26,
+    -2.72
+   ],
+   "max": [
+    2.61,
+    13.13,
+    2.7
+   ],
+   "surfaces": [
+    "gaia/tree_palm_trop_a.dds"
+   ],
+   "path": "res://models/environment/palms/palm_tropical_tall_0.glb"
+  },
+  {
+   "name": "palm_tropical_tall_1",
+   "tris": 976,
+   "min": [
+    -2.3,
+    -0.36,
+    -2.41
+   ],
+   "max": [
+    2.34,
+    8.55,
+    2.18
+   ],
+   "surfaces": [
+    "gaia/tree_palm_trop_b.dds"
+   ],
+   "path": "res://models/environment/palms/palm_tropical_tall_1.glb"
+  },
+  {
+   "name": "palm_areca_0",
+   "tris": 124,
+   "min": [
+    -1.85,
+    -1.58,
+    -1.97
+   ],
+   "max": [
+    2.59,
+    8.33,
+    2.29
+   ],
+   "surfaces": [
+    "gaia/palm_areca.png"
+   ],
+   "path": "res://models/environment/palms/palm_areca_0.glb"
+  },
+  {
+   "name": "palm_areca_1",
+   "tris": 152,
+   "min": [
+    -2.53,
+    -1.73,
+    -2.27
+   ],
+   "max": [
+    2.78,
+    10.91,
+    2.8
+   ],
+   "surfaces": [
+    "gaia/palm_areca.png"
+   ],
+   "path": "res://models/environment/palms/palm_areca_1.glb"
+  },
+  {
+   "name": "palm_royal_0",
+   "tris": 2440,
+   "min": [
+    -1.4,
+    -2.52,
+    -2.22
+   ],
+   "max": [
+    3.63,
+    11.28,
+    2.49
+   ],
+   "surfaces": [
+    "gaia/palm_royal.png"
+   ],
+   "path": "res://models/environment/palms/palm_royal_0.glb"
+  },
+  {
+   "name": "palm_royal_1",
+   "tris": 1517,
+   "min": [
+    -3.46,
+    -3.65,
+    -3.96
+   ],
+   "max": [
+    3.75,
+    12.71,
+    3.25
+   ],
+   "surfaces": [
+    "gaia/palm_royal.png"
+   ],
+   "path": "res://models/environment/palms/palm_royal_1.glb"
+  },
+  {
+   "name": "palm_nipa_0",
+   "tris": 200,
+   "min": [
+    -2.92,
+    -3.5,
+    -2.61
+   ],
+   "max": [
+    3.66,
+    6.1,
+    3.46
+   ],
+   "surfaces": [
+    "gaia/palm_nipa_1.png"
+   ],
+   "path": "res://models/environment/palms/palm_nipa_0.glb"
+  },
+  {
+   "name": "palm_nipa_1",
+   "tris": 168,
+   "min": [
+    -2.55,
+    -3.67,
+    -1.8
+   ],
+   "max": [
+    2.46,
+    5.98,
+    2.15
+   ],
+   "surfaces": [
+    "gaia/palm_nipa_2.png"
+   ],
+   "path": "res://models/environment/palms/palm_nipa_1.glb"
+  },
+  {
+   "name": "banana_0",
+   "tris": 242,
+   "min": [
+    -2.11,
+    -0.53,
+    -2.27
+   ],
+   "max": [
+    2.51,
+    5.53,
+    2.3
+   ],
+   "surfaces": [
+    "gaia/banana.png"
+   ],
+   "path": "res://models/environment/palms/banana_0.glb"
+  },
+  {
+   "name": "banana_1",
+   "tris": 294,
+   "min": [
+    -2.73,
+    -1.2,
+    -3.0
+   ],
+   "max": [
+    2.7,
+    6.28,
+    2.42
+   ],
+   "surfaces": [
+    "gaia/banana.png"
+   ],
+   "path": "res://models/environment/palms/banana_1.glb"
+  },
+  {
+   "name": "bamboo_0",
+   "tris": 234,
+   "min": [
+    -2.08,
+    -0.83,
+    -2.13
+   ],
+   "max": [
+    2.23,
+    8.61,
+    2.96
+   ],
+   "surfaces": [
+    "gaia/bamboo_1.png"
+   ],
+   "path": "res://models/environment/palms/bamboo_0.glb"
+  },
+  {
+   "name": "bamboo_1",
+   "tris": 262,
+   "min": [
+    -2.81,
+    -1.05,
+    -3.34
+   ],
+   "max": [
+    3.07,
+    10.08,
+    2.92
+   ],
+   "surfaces": [
+    "gaia/bamboo_1.png"
+   ],
+   "path": "res://models/environment/palms/bamboo_1.glb"
+  }
+ ],
+ "dead": [
+  {
+   "name": "tree_dead_0",
+   "tris": 199,
+   "min": [
+    -3.81,
+    -4.48,
+    -3.38
+   ],
+   "max": [
+    3.68,
+    10.52,
+    3.91
+   ],
+   "surfaces": [
+    "gaia/tree_dead.dds"
+   ],
+   "path": "res://models/environment/dead/tree_dead_0.glb"
+  },
+  {
+   "name": "tree_dead_1",
+   "tris": 168,
+   "min": [
+    -2.77,
+    -4.19,
+    -1.7
+   ],
+   "max": [
+    1.75,
+    8.91,
+    1.83
+   ],
+   "surfaces": [
+    "gaia/tree_dead.dds"
+   ],
+   "path": "res://models/environment/dead/tree_dead_1.glb"
+  },
+  {
+   "name": "oak_dead_0",
+   "tris": 363,
+   "min": [
+    -6.75,
+    -4.68,
+    -4.88
+   ],
+   "max": [
+    3.5,
+    10.5,
+    2.89
+   ],
+   "surfaces": [
+    "gaia/tree_dead.dds"
+   ],
+   "path": "res://models/environment/dead/oak_dead_0.glb"
+  },
+  {
+   "name": "oak_dead_1",
+   "tris": 297,
+   "min": [
+    -4.52,
+    -2.06,
+    -4.64
+   ],
+   "max": [
+    7.51,
+    9.08,
+    4.95
+   ],
+   "surfaces": [
+    "gaia/tree_dead.dds"
+   ],
+   "path": "res://models/environment/dead/oak_dead_1.glb"
+  },
+  {
+   "name": "elm_dead",
+   "tris": 324,
+   "min": [
+    -2.37,
+    -0.7,
+    -4.5
+   ],
+   "max": [
+    6.1,
+    15.48,
+    5.86
+   ],
+   "surfaces": [
+    "gaia/tree_elm_dead_01.png"
+   ],
+   "path": "res://models/environment/dead/elm_dead.glb"
+  }
+ ],
+ "bushes": [
+  {
+   "name": "bush_tropic_a",
+   "tris": 8,
+   "min": [
+    -1.89,
+    -0.19,
+    -1.88
+   ],
+   "max": [
+    1.89,
+    2.22,
+    1.91
+   ],
+   "surfaces": [
+    "gaia/bush_tropic_a.dds"
+   ],
+   "path": "res://models/environment/bushes/bush_tropic_a.glb"
+  },
+  {
+   "name": "bush_tropic_b_0",
+   "tris": 8,
+   "min": [
+    -1.35,
+    -0.06,
+    -1.35
+   ],
+   "max": [
+    1.35,
+    1.57,
+    1.35
+   ],
+   "surfaces": [
+    "gaia/bush_tropic_a.dds"
+   ],
+   "path": "res://models/environment/bushes/bush_tropic_b_0.glb"
+  },
+  {
+   "name": "bush_tropic_b_1",
+   "tris": 12,
+   "min": [
+    -1.31,
+    -0.05,
+    -1.31
+   ],
+   "max": [
+    1.31,
+    1.97,
+    1.31
+   ],
+   "surfaces": [
+    "gaia/bush_tropic_b.dds"
+   ],
+   "path": "res://models/environment/bushes/bush_tropic_b_1.glb"
+  },
+  {
+   "name": "tropic_bush_biome_0",
+   "tris": 152,
+   "min": [
+    -2.16,
+    -0.2,
+    -2.23
+   ],
+   "max": [
+    2.24,
+    2.5,
+    2.28
+   ],
+   "surfaces": [
+    "gaia/fern_b.png"
+   ],
+   "path": "res://models/environment/bushes/tropic_bush_biome_0.glb"
+  },
+  {
+   "name": "tropic_bush_biome_1",
+   "tris": 152,
+   "min": [
+    -2.16,
+    -0.2,
+    -2.23
+   ],
+   "max": [
+    2.24,
+    2.5,
+    2.28
+   ],
+   "surfaces": [
+    "gaia/fern_c.png"
+   ],
+   "path": "res://models/environment/bushes/tropic_bush_biome_1.glb"
+  },
+  {
+   "name": "bush_tempe_la_lush_0",
+   "tris": 20,
+   "min": [
+    -1.57,
+    -0.2,
+    -1.49
+   ],
+   "max": [
+    1.58,
+    2.8,
+    1.49
+   ],
+   "surfaces": [
+    "gaia/bush_tempe_a.dds"
+   ],
+   "path": "res://models/environment/bushes/bush_tempe_la_lush_0.glb"
+  },
+  {
+   "name": "bush_tempe_la_lush_1",
+   "tris": 20,
+   "min": [
+    -1.95,
+    -0.26,
+    -1.92
+   ],
+   "max": [
+    1.97,
+    3.06,
+    1.92
+   ],
+   "surfaces": [
+    "gaia/bush_tempe_a.dds"
+   ],
+   "path": "res://models/environment/bushes/bush_tempe_la_lush_1.glb"
+  },
+  {
+   "name": "shrub_tropic_palm",
+   "tris": 56,
+   "min": [
+    -1.21,
+    -0.01,
+    -1.11
+   ],
+   "max": [
+    1.22,
+    1.56,
+    1.27
+   ],
+   "surfaces": [
+    "gaia/shrub_tropic_palm.png"
+   ],
+   "path": "res://models/environment/bushes/shrub_tropic_palm.glb"
+  },
+  {
+   "name": "shrub_fanpalm",
+   "tris": 436,
+   "min": [
+    -1.01,
+    -0.02,
+    -0.98
+   ],
+   "max": [
+    1.08,
+    1.93,
+    0.87
+   ],
+   "surfaces": [
+    "gaia/shrub_fanpalm.png"
+   ],
+   "path": "res://models/environment/bushes/shrub_fanpalm.glb"
+  },
+  {
+   "name": "foliagebush",
+   "tris": 22,
+   "min": [
+    -0.89,
+    -0.06,
+    -0.83
+   ],
+   "max": [
+    0.89,
+    1.68,
+    0.86
+   ],
+   "surfaces": [
+    "gaia/wrld_dankleberrybush_blue.dds"
+   ],
+   "path": "res://models/environment/bushes/foliagebush.glb"
+  }
+ ],
+ "food": [
+  {
+   "name": "berry_bush_0",
+   "tris": 458,
+   "min": [
+    -1.96,
+    -1.01,
+    -2.17
+   ],
+   "max": [
+    2.72,
+    2.39,
+    2.31
+   ],
+   "surfaces": [
+    "gaia/berry_bush_01.png"
+   ],
+   "path": "res://models/environment/food/berry_bush_0.glb"
+  },
+  {
+   "name": "berry_bush_1",
+   "tris": 456,
+   "min": [
+    -2.5,
+    -0.71,
+    -2.23
+   ],
+   "max": [
+    2.27,
+    2.36,
+    2.02
+   ],
+   "surfaces": [
+    "gaia/berry_bush_02.png"
+   ],
+   "path": "res://models/environment/food/berry_bush_1.glb"
+  },
+  {
+   "name": "plant_tropic_large_0",
+   "tris": 16,
+   "min": [
+    -1.21,
+    0.04,
+    -1.13
+   ],
+   "max": [
+    1.12,
+    0.63,
+    1.01
+   ],
+   "surfaces": [
+    "gaia/plant_tropic_i.dds"
+   ],
+   "path": "res://models/environment/food/plant_tropic_large_0.glb"
+  },
+  {
+   "name": "plant_tropic_large_1",
+   "tris": 16,
+   "min": [
+    -1.21,
+    0.04,
+    -1.13
+   ],
+   "max": [
+    1.12,
+    0.63,
+    1.01
+   ],
+   "surfaces": [
+    "gaia/plant_tropic_j.dds"
+   ],
+   "path": "res://models/environment/food/plant_tropic_large_1.glb"
+  },
+  {
+   "name": "shrub_tropic_plant_flower",
+   "tris": 202,
+   "min": [
+    -1.18,
+    -0.0,
+    -1.17
+   ],
+   "max": [
+    1.18,
+    1.74,
+    1.18
+   ],
+   "surfaces": [
+    "gaia/shrub_tropic_a.png"
+   ],
+   "path": "res://models/environment/food/shrub_tropic_plant_flower.glb"
+  }
+ ],
+ "plants": [
+  {
+   "name": "plant_tropic_a_0",
+   "tris": 8,
+   "min": [
+    -0.96,
+    0.02,
+    -0.96
+   ],
+   "max": [
+    0.96,
+    1.04,
+    0.96
+   ],
+   "surfaces": [
+    "gaia/plant_tropic_a.dds"
+   ],
+   "path": "res://models/environment/plants/plant_tropic_a_0.glb"
+  },
+  {
+   "name": "plant_tropic_a_1",
+   "tris": 4,
+   "min": [
+    -0.51,
+    -0.03,
+    -0.51
+   ],
+   "max": [
+    0.51,
+    0.53,
+    0.51
+   ],
+   "surfaces": [
+    "gaia/plant_tropic_b.dds"
+   ],
+   "path": "res://models/environment/plants/plant_tropic_a_1.glb"
+  },
+  {
+   "name": "shrub_tropic_plant_a",
+   "tris": 60,
+   "min": [
+    -1.04,
+    -0.0,
+    -1.17
+   ],
+   "max": [
+    1.18,
+    1.42,
+    1.12
+   ],
+   "surfaces": [
+    "gaia/shrub_tropic_a.png"
+   ],
+   "path": "res://models/environment/plants/shrub_tropic_plant_a.glb"
+  },
+  {
+   "name": "shrub_tropic_plant_b",
+   "tris": 60,
+   "min": [
+    -1.04,
+    -0.0,
+    -1.17
+   ],
+   "max": [
+    1.18,
+    1.42,
+    1.12
+   ],
+   "surfaces": [
+    "gaia/shrub_tropic_b.png"
+   ],
+   "path": "res://models/environment/plants/shrub_tropic_plant_b.glb"
+  },
+  {
+   "name": "ferns",
+   "tris": 16,
+   "min": [
+    -1.49,
+    -0.08,
+    -1.58
+   ],
+   "max": [
+    1.4,
+    1.17,
+    1.67
+   ],
+   "surfaces": [
+    "gaia/ferns_a.png"
+   ],
+   "path": "res://models/environment/plants/ferns.glb"
+  }
+ ],
+ "grass": [
+  {
+   "name": "grass_tropic_field",
+   "tris": 12,
+   "min": [
+    -2.05,
+    -0.04,
+    -1.92
+   ],
+   "max": [
+    1.41,
+    1.58,
+    1.49
+   ],
+   "surfaces": [
+    "gaia/grass_field_temperate.dds"
+   ],
+   "path": "res://models/environment/grass/grass_tropic_field.glb"
+  },
+  {
+   "name": "grass_tropical",
+   "tris": 12,
+   "min": [
+    -2.05,
+    -0.04,
+    -1.92
+   ],
+   "max": [
+    1.41,
+    1.58,
+    1.49
+   ],
+   "surfaces": [
+    "gaia/grass_tropic_a.png"
+   ],
+   "path": "res://models/environment/grass/grass_tropical.glb"
+  },
+  {
+   "name": "grass_soft_large_tall",
+   "tris": 12,
+   "min": [
+    -2.05,
+    -0.04,
+    -1.92
+   ],
+   "max": [
+    1.41,
+    1.58,
+    1.49
+   ],
+   "surfaces": [
+    "gaia/grass_field.dds"
+   ],
+   "path": "res://models/environment/grass/grass_soft_large_tall.glb"
+  }
+ ],
+ "water_plants": [
+  {
+   "name": "reeds_pond_lush_a_0",
+   "tris": 8,
+   "min": [
+    -1.34,
+    -0.04,
+    -1.18
+   ],
+   "max": [
+    1.34,
+    2.02,
+    1.18
+   ],
+   "surfaces": [
+    "gaia/reeds_pond_lush_a.dds"
+   ],
+   "path": "res://models/environment/water_plants/reeds_pond_lush_a_0.glb"
+  },
+  {
+   "name": "reeds_pond_lush_a_1",
+   "tris": 8,
+   "min": [
+    -1.34,
+    -0.04,
+    -1.11
+   ],
+   "max": [
+    1.37,
+    3.17,
+    1.11
+   ],
+   "surfaces": [
+    "gaia/reeds_pond_lush_a.dds"
+   ],
+   "path": "res://models/environment/water_plants/reeds_pond_lush_a_1.glb"
+  },
+  {
+   "name": "cattails",
+   "tris": 16,
+   "min": [
+    -0.93,
+    -0.18,
+    -0.91
+   ],
+   "max": [
+    0.9,
+    3.37,
+    0.91
+   ],
+   "surfaces": [
+    "gaia/cattails_1.png"
+   ],
+   "path": "res://models/environment/water_plants/cattails.glb"
+  },
+  {
+   "name": "water_lillies",
+   "tris": 2,
+   "min": [
+    -0.96,
+    0.01,
+    -0.9
+   ],
+   "max": [
+    0.92,
+    0.01,
+    0.98
+   ],
+   "surfaces": [
+    "gaia/water_lillies.dds"
+   ],
+   "path": "res://models/environment/water_plants/water_lillies.glb"
+  },
+  {
+   "name": "pond_lillies_large",
+   "tris": 2,
+   "min": [
+    -4.95,
+    0.0,
+    -3.72
+   ],
+   "max": [
+    5.09,
+    0.0,
+    5.71
+   ],
+   "surfaces": [
+    "gaia/water_plants_lg.dds"
+   ],
+   "path": "res://models/environment/water_plants/pond_lillies_large.glb"
+  }
+ ],
+ "rocks": [
+  {
+   "name": "stones_tropic_large_0",
+   "tris": 41,
+   "min": [
+    -1.47,
+    -0.35,
+    -2.65
+   ],
+   "max": [
+    1.78,
+    4.06,
+    2.97
+   ],
+   "surfaces": [
+    "gaia/stone_tropic_hi.dds"
+   ],
+   "path": "res://models/environment/rocks/stones_tropic_large_0.glb"
+  },
+  {
+   "name": "stones_tropic_large_1",
+   "tris": 93,
+   "min": [
+    -3.19,
+    -0.14,
+    -2.93
+   ],
+   "max": [
+    2.7,
+    4.31,
+    2.99
+   ],
+   "surfaces": [
+    "gaia/stone_tropic_hi.dds"
+   ],
+   "path": "res://models/environment/rocks/stones_tropic_large_1.glb"
+  },
+  {
+   "name": "stonemine_tropic_0",
+   "tris": 46,
+   "min": [
+    -1.4,
+    -0.02,
+    -1.87
+   ],
+   "max": [
+    1.4,
+    1.19,
+    1.99
+   ],
+   "surfaces": [
+    "gaia/stonequarry_tropic.png"
+   ],
+   "path": "res://models/environment/rocks/stonemine_tropic_0.glb"
+  },
+  {
+   "name": "stonemine_tropic_1",
+   "tris": 112,
+   "min": [
+    -1.8,
+    0.0,
+    -1.24
+   ],
+   "max": [
+    1.78,
+    1.76,
+    2.18
+   ],
+   "surfaces": [
+    "gaia/stonequarry_tropic.png"
+   ],
+   "path": "res://models/environment/rocks/stonemine_tropic_1.glb"
+  },
+  {
+   "name": "stone_granite_boulder_0",
+   "tris": 50,
+   "min": [
+    -1.8,
+    -0.02,
+    -2.11
+   ],
+   "max": [
+    1.8,
+    2.09,
+    2.11
+   ],
+   "surfaces": [
+    "gaia/stone_temperate_01.png"
+   ],
+   "path": "res://models/environment/rocks/stone_granite_boulder_0.glb"
+  },
+  {
+   "name": "stone_granite_boulder_1",
+   "tris": 50,
+   "min": [
+    -1.74,
+    0.01,
+    -1.9
+   ],
+   "max": [
+    1.74,
+    1.88,
+    1.9
+   ],
+   "surfaces": [
+    "gaia/stone_temperate_01.png"
+   ],
+   "path": "res://models/environment/rocks/stone_granite_boulder_1.glb"
+  },
+  {
+   "name": "stone_granite_large_0",
+   "tris": 40,
+   "min": [
+    -0.66,
+    -0.0,
+    -0.56
+   ],
+   "max": [
+    0.66,
+    1.21,
+    0.56
+   ],
+   "surfaces": [
+    "gaia/stone_temperate_01.png"
+   ],
+   "path": "res://models/environment/rocks/stone_granite_large_0.glb"
+  },
+  {
+   "name": "stone_granite_large_1",
+   "tris": 41,
+   "min": [
+    -0.8,
+    -0.0,
+    -0.86
+   ],
+   "max": [
+    0.71,
+    0.71,
+    0.95
+   ],
+   "surfaces": [
+    "gaia/stone_temperate_01.png"
+   ],
+   "path": "res://models/environment/rocks/stone_granite_large_1.glb"
+  },
+  {
+   "name": "stone_granite_med_0",
+   "tris": 56,
+   "min": [
+    -0.31,
+    0.0,
+    -0.38
+   ],
+   "max": [
+    0.31,
+    0.39,
+    0.38
+   ],
+   "surfaces": [
+    "gaia/stone_temperate_01.png"
+   ],
+   "path": "res://models/environment/rocks/stone_granite_med_0.glb"
+  },
+  {
+   "name": "stone_granite_med_1",
+   "tris": 40,
+   "min": [
+    -0.3,
+    -0.01,
+    -0.25
+   ],
+   "max": [
+    0.3,
+    0.59,
+    0.25
+   ],
+   "surfaces": [
+    "gaia/stone_temperate_01.png"
+   ],
+   "path": "res://models/environment/rocks/stone_granite_med_1.glb"
+  },
+  {
+   "name": "highland1_moss",
+   "tris": 40,
+   "min": [
+    -0.67,
+    -0.05,
+    -0.51
+   ],
+   "max": [
+    0.67,
+    0.79,
+    0.51
+   ],
+   "surfaces": [
+    "gaia/wrld_rock_highlands_moss.dds"
+   ],
+   "path": "res://models/environment/rocks/highland1_moss.glb"
+  },
+  {
+   "name": "highland2_moss",
+   "tris": 56,
+   "min": [
+    -0.84,
+    -0.04,
+    -0.69
+   ],
+   "max": [
+    0.84,
+    1.26,
+    0.69
+   ],
+   "surfaces": [
+    "gaia/wrld_rock_highlands_moss.dds"
+   ],
+   "path": "res://models/environment/rocks/highland2_moss.glb"
+  },
+  {
+   "name": "shoreline_boulder_0",
+   "tris": 27,
+   "min": [
+    -2.25,
+    -0.0,
+    -1.84
+   ],
+   "max": [
+    2.25,
+    2.39,
+    1.84
+   ],
+   "surfaces": [
+    "gaia/rock_ocean_1.dds"
+   ],
+   "path": "res://models/environment/rocks/shoreline_boulder_0.glb"
+  },
+  {
+   "name": "shoreline_boulder_1",
+   "tris": 31,
+   "min": [
+    -1.97,
+    -0.17,
+    -1.96
+   ],
+   "max": [
+    1.97,
+    3.65,
+    1.96
+   ],
+   "surfaces": [
+    "gaia/rock_ocean_1.dds"
+   ],
+   "path": "res://models/environment/rocks/shoreline_boulder_1.glb"
+  },
+  {
+   "name": "shoreline_large_0",
+   "tris": 50,
+   "min": [
+    -0.92,
+    0.02,
+    -1.11
+   ],
+   "max": [
+    0.92,
+    1.1,
+    1.11
+   ],
+   "surfaces": [
+    "gaia/rock_ocean_1.dds"
+   ],
+   "path": "res://models/environment/rocks/shoreline_large_0.glb"
+  },
+  {
+   "name": "shoreline_large_1",
+   "tris": 50,
+   "min": [
+    -1.09,
+    -0.01,
+    -1.15
+   ],
+   "max": [
+    1.09,
+    1.96,
+    1.15
+   ],
+   "surfaces": [
+    "gaia/rock_ocean_1.dds"
+   ],
+   "path": "res://models/environment/rocks/shoreline_large_1.glb"
+  }
+ ],
+ "cliffs": [
+  {
+   "name": "temp_cliffs_a_0",
+   "tris": 268,
+   "min": [
+    -5.39,
+    -0.43,
+    -8.2
+   ],
+   "max": [
+    5.6,
+    7.81,
+    -3.22
+   ],
+   "surfaces": [
+    "gaia/temperate_cliff_a.png"
+   ],
+   "path": "res://models/environment/cliffs/temp_cliffs_a_0.glb"
+  },
+  {
+   "name": "temp_cliffs_a_1",
+   "tris": 268,
+   "min": [
+    -4.38,
+    -0.43,
+    -9.01
+   ],
+   "max": [
+    4.82,
+    7.81,
+    -3.2
+   ],
+   "surfaces": [
+    "gaia/temperate_cliff_a.png"
+   ],
+   "path": "res://models/environment/cliffs/temp_cliffs_a_1.glb"
+  }
+ ],
+ "logs": [
+  {
+   "name": "water_log",
+   "tris": 43,
+   "min": [
+    -1.01,
+    -0.12,
+    -2.07
+   ],
+   "max": [
+    0.96,
+    0.55,
+    2.07
+   ],
+   "surfaces": [
+    "gaia/log_a.dds"
+   ],
+   "path": "res://models/environment/logs/water_log.glb"
+  }
+ ]
+}
