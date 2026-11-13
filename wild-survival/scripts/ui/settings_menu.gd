@@ -14,14 +14,14 @@ var _syncing := false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	theme = UITheme.get_theme()
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	UITheme.fill(self)
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.55)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
+	UITheme.fill(dim)
 	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
+	UITheme.fill(center)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(820, 640)
 	center.add_child(panel)
@@ -32,8 +32,8 @@ func _ready() -> void:
 	var tabs := TabContainer.new()
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(tabs)
-	tabs.add_child(_graphics_tab())
-	tabs.add_child(_audio_tab())
+	tabs.add_child(_scrolled(_graphics_tab()))
+	tabs.add_child(_scrolled(_audio_tab()))
 	tabs.add_child(_controls_tab())
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_END
@@ -47,6 +47,17 @@ func close() -> void:
 	Settings.save()
 	hide()
 	closed.emit()
+
+
+## Tabs scroll rather than push the panel off a small screen.
+func _scrolled(g: GridContainer) -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = g.name
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	g.name = "Grid"
+	g.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(g)
+	return scroll
 
 
 func _grid(tab_name: String) -> GridContainer:

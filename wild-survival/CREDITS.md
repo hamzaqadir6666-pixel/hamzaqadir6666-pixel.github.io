@@ -20,6 +20,9 @@ Used and **modified** for this project (the modified files are likewise released
   game over (*Dried Tears*).
 - `audio/ambience/*` except the two files listed under "Original" below.
 - `audio/animals/lion_*` — original recordings.
+- `models/animals/gazelle.glb`, `boar.glb` — 0 A.D. gazelle and boar (mesh, skeleton, texture, Idle and
+  Walk clips), © Wildfire Games, CC BY-SA 3.0. glTF conversion taken from
+  https://github.com/Vitexus/ishtaria-client (`assets/zeroad/fauna/`), buffers repacked for Godot.
 - `audio/animals/tiger_*`, `cheetah_attack*`, `cheetah_growl`, `hyena_attack*`, `hyena_growl` —
   **derived** from the 0 A.D. lion recordings by pitch shifting and filtering. They are stand-ins, not
   recordings of those species.

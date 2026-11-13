@@ -13,7 +13,7 @@ func _configure() -> void:
 	display_name = "Cheetah"
 	model_path = "res://models/animals/cheetah.glb"
 	model_scale = 1.0
-	walk_speed = 1.8
+	walk_speed = 1.55
 	trot_speed = 4.6
 	run_speed = 18.5
 	acceleration = 6.5

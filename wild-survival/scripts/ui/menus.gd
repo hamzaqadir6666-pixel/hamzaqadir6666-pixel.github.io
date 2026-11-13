@@ -40,48 +40,48 @@ func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_root = Control.new()
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.theme = UITheme.get_theme()
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
+	UITheme.fill(_root)
 	_build_main()
 	_build_pause()
 	_build_over()
 	_build_loading()
 	settings = SETTINGS_SCENE.instantiate()
 	_root.add_child(settings)
+	UITheme.fill(settings)
 	settings.hide()
 	settings.closed.connect(_on_settings_closed)
 
 
+## A full-screen page with a dimmed background. Everything on a page is laid out by containers, so
+## it stays where it belongs at any window size or aspect ratio.
 func _screen(dim: float) -> Control:
 	var c := Control.new()
-	c.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.add_child(c)
+	UITheme.fill(c)
 	var bg := ColorRect.new()
 	bg.color = Color(0.01, 0.03, 0.01, dim)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	c.add_child(bg)
-	_root.add_child(c)
+	UITheme.fill(bg)
 	c.hide()
 	return c
 
 
-func _column(parent: Control, preset: int, offset := Vector2.ZERO) -> VBoxContainer:
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 12)
-	parent.add_child(v)
-	v.set_anchors_preset(preset)
-	v.grow_vertical = Control.GROW_DIRECTION_BOTH
-	if preset == Control.PRESET_CENTER:
-		v.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	v.position += offset
-	return v
+func _centered(parent: Control) -> CenterContainer:
+	var center := CenterContainer.new()
+	parent.add_child(center)
+	UITheme.fill(center)
+	return center
 
 
 func _build_loading() -> void:
 	_loading = _screen(1.0)
-	var v := _column(_loading, Control.PRESET_CENTER)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 14)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	_centered(_loading).add_child(v)
 	var title := UITheme.label("WILD SURVIVAL", 64, UITheme.ACCENT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
@@ -89,6 +89,8 @@ func _build_loading() -> void:
 	_loading_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_loading_text)
 	_loading_bar = UITheme.bar(UITheme.LEAF, Vector2(520, 14))
+	_loading_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_loading_bar.value = 0.0
 	v.add_child(_loading_bar)
 
 
@@ -106,27 +108,51 @@ func _build_main() -> void:
 	tex.stretch_mode = TextureRect.STRETCH_SCALE
 	tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_main.add_child(tex)
-	tex.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	tex.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
 	tex.offset_right = 780.0
-	var v := _column(_main, Control.PRESET_CENTER_LEFT, Vector2(90, 0))
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 90)
+	margin.add_theme_constant_override("margin_right", 70)
+	margin.add_theme_constant_override("margin_top", 40)
+	margin.add_theme_constant_override("margin_bottom", 40)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_main.add_child(margin)
+	UITheme.fill(margin)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 40)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(row)
+
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(v)
 	v.add_child(UITheme.label("WILD SURVIVAL", 76, UITheme.ACCENT))
 	v.add_child(UITheme.label("You are the prey. The jungle is hungry.", 22, UITheme.MUTED))
 	var gap := Control.new()
 	gap.custom_minimum_size.y = 26
 	v.add_child(gap)
-	v.add_child(UITheme.button("Start", func() -> void: start_requested.emit(), 320.0))
-	v.add_child(UITheme.button("Settings", func() -> void: _open_settings(_main), 320.0))
-	v.add_child(UITheme.button("How to Survive", func() -> void: _help.visible = not _help.visible, 320.0))
-	v.add_child(UITheme.button("Quit", func() -> void: quit_requested.emit(), 320.0))
+	for item: Array in [
+			["Start", func() -> void: start_requested.emit()],
+			["Settings", func() -> void: _open_settings(_main)],
+			["How to Survive", func() -> void: _help.visible = not _help.visible],
+			["Quit", func() -> void: quit_requested.emit()]]:
+		var b := UITheme.button(item[0], item[1], 320.0)
+		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		v.add_child(b)
 	_best = UITheme.label("", 17, UITheme.MUTED)
 	v.add_child(_best)
 
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(spacer)
+
 	_help = PanelContainer.new()
-	_main.add_child(_help)
-	_help.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	_help.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_help.grow_vertical = Control.GROW_DIRECTION_BOTH
-	_help.position.x -= 70
+	_help.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(_help)
 	var hv := VBoxContainer.new()
 	hv.add_theme_constant_override("separation", 8)
 	_help.add_child(hv)
@@ -147,6 +173,9 @@ func _build_main() -> void:
 		"CHEETAH - fastest animal alive in the open. Turn sharply or dive into dense forest.",
 		"HYENA - roams in packs, relentless and erratic. Break line of sight; they cannot swim.",
 		"",
+		"Gazelle and boar share the jungle. Predators hunt them too - a hunter busy with a kill",
+		"is a hunter not looking for you, and a herd bolting is a warning.",
+		"",
 		"Six safe thickets are too dense for predators. Find them - and the other secrets of the jungle.",
 		"Night is darker and far more dangerous.",
 	])
@@ -156,9 +185,7 @@ func _build_main() -> void:
 
 func _build_pause() -> void:
 	_pause = _screen(0.55)
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_pause.add_child(center)
+	var center := _centered(_pause)
 	var panel := PanelContainer.new()
 	center.add_child(panel)
 	var v := VBoxContainer.new()
@@ -176,9 +203,7 @@ func _build_pause() -> void:
 
 func _build_over() -> void:
 	_over = _screen(0.72)
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_over.add_child(center)
+	var center := _centered(_over)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size.x = 560
 	center.add_child(panel)

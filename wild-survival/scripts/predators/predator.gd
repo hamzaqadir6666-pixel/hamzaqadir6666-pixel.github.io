@@ -6,8 +6,8 @@ extends CharacterBody3D
 
 signal state_changed(predator: Predator, state: int)
 
-enum State { REST, PATROL, INVESTIGATE, STALK, CHASE, ATTACK, SEARCH, RETURN, SPECIAL }
-const STATE_NAMES := ["REST", "PATROL", "INVESTIGATE", "STALK", "CHASE", "ATTACK", "SEARCH", "RETURN", "SPECIAL"]
+enum State { REST, PATROL, INVESTIGATE, STALK, CHASE, ATTACK, SEARCH, RETURN, SPECIAL, HUNT, FEED }
+const STATE_NAMES := ["REST", "PATROL", "INVESTIGATE", "STALK", "CHASE", "ATTACK", "SEARCH", "RETURN", "SPECIAL", "HUNT", "FEED"]
 
 # ---- species configuration (set in _configure)
 var species := "predator"
@@ -91,6 +91,13 @@ var _voice: AudioStreamPlayer3D
 var _step_accum := 0.0
 var _face_pos := Vector3.ZERO
 var _face_time := 0.0
+var prey_target: Prey = null      ## the wild animal this predator is hunting or eating
+var hunts_prey := true
+var prey_hunt_time := 16.0        ## how long it will chase a wild animal before giving up
+var _hunt_cd := 0.0
+var _anim_lock := 0.0
+var _clip_hold := 0.0
+var _gait := 0                    ## 0 idle, 1 walk, 2 run
 
 
 func _ready() -> void:
@@ -123,6 +130,7 @@ func _ready() -> void:
 	_think_timer = rng.randf() * 0.3
 	_heading = rng.randf() * TAU
 	_voice_cd = rng.randf_range(10.0, 40.0)
+	_hunt_cd = rng.randf_range(15.0, 70.0)
 	home = Vector2(global_position.x, global_position.z)
 	_on_spawned()
 	set_state(State.PATROL)
@@ -242,7 +250,7 @@ func sense() -> float:
 		# already locked on: cover only helps once the deer has opened a gap
 		vis = maxf(vis, 0.4 if d < 14.0 else 0.12)
 	var vrange := vision_range * lerpf(1.0, night_vision, night())
-	if state == State.REST:
+	if state == State.REST or state == State.FEED:
 		vrange *= 0.55
 	var eff := vrange * clampf(vis, 0.0, 1.0)
 	var flat := Vector3(to.x, 0.0, to.z).normalized()
@@ -332,6 +340,7 @@ func _physics_process(delta: float) -> void:
 		var interval := _think_interval if player_distance < 90.0 else _think_interval * 2.5
 		_think_timer = interval
 		_update_awareness(interval)
+		_consider_prey(interval)
 		_think(interval)
 	_update_stamina(delta)
 	if state == State.ATTACK:
@@ -386,6 +395,10 @@ func _think(dt: float) -> void:
 			_think_return(dt)
 		State.SPECIAL:
 			_think_special(dt)
+		State.HUNT:
+			_think_hunt(dt)
+		State.FEED:
+			_think_feed(dt)
 
 
 func _on_state_enter(_s: int, _prev: int) -> void:
@@ -529,6 +542,93 @@ func _think_return(_dt: float) -> void:
 
 func _think_special(_dt: float) -> void:
 	set_state(State.PATROL)
+
+
+# ------------------------------------------------------------------ hunting wild prey
+
+## A calm, unoccupied predator that notices a gazelle or boar nearby goes after it.
+func _consider_prey(dt: float) -> void:
+	_hunt_cd = maxf(_hunt_cd - dt, 0.0)
+	if not hunts_prey or _hunt_cd > 0.0 or awareness > 0.15 or tired:
+		return
+	if state != State.REST and state != State.PATROL:
+		return
+	if manager == null or manager.prey == null or not manager.allow_hunts:
+		return
+	_hunt_cd = 3.0   # look again shortly if nothing suitable is about
+	var target: Prey = manager.prey.nearest_prey(global_position, vision_range * 0.75)
+	if target == null or target.pos2().distance_to(home) > leash_radius:
+		return
+	prey_target = target
+	target.hunter = self
+	set_state(State.HUNT)
+
+
+func _drop_prey(cooldown: float) -> void:
+	if prey_target != null and is_instance_valid(prey_target) and prey_target.hunter == self and prey_target.alive():
+		prey_target.hunter = null
+	prey_target = null
+	_hunt_cd = cooldown
+
+
+func _think_hunt(_dt: float) -> void:
+	# the deer is always the more interesting meal
+	if awareness >= 1.0:
+		_drop_prey(rng.randf_range(40.0, 80.0))
+		_on_detected()
+		return
+	if prey_target == null or not is_instance_valid(prey_target) or not prey_target.alive():
+		_drop_prey(rng.randf_range(20.0, 40.0))
+		set_state(State.RETURN)
+		return
+	var to := prey_target.global_position - global_position
+	to.y = 0.0
+	var d := to.length()
+	if d < attack_range + 0.5:
+		_kill_prey()
+		return
+	if state_time > prey_hunt_time or tired or pos2().distance_to(home) > leash_radius \
+			or d > vision_range * 1.6 or world.in_safe_zone(prey_target.pos2(), 1.2):
+		_drop_prey(rng.randf_range(45.0, 90.0))
+		vocalize("growl", -6.0)
+		set_state(State.RETURN)
+		return
+	if not prey_target.is_fleeing() and d > 14.0:
+		# creep in while it has not noticed
+		go_to(prey_target.global_position, walk_speed * 1.3)
+	else:
+		var lead := prey_target.velocity * clampf(d / maxf(current_run_speed(), 1.0), 0.0, 0.8)
+		lead.y = 0.0
+		go_to(prey_target.global_position + lead, current_run_speed())
+
+
+func _kill_prey() -> void:
+	var clip := _attack_clip()
+	rig.play(clip, rig.length(clip) / attack_anim_time, 0.1, true)
+	_anim_lock = attack_anim_time
+	vocalize("attack", 0.0, true)
+	prey_target.kill(self)
+	_hunt_cd = rng.randf_range(120.0, 220.0)
+	stop_moving()
+	_speed *= 0.2
+	set_state(State.FEED)
+
+
+## Stand over the kill and eat. The deer can slip past a feeding predator far more easily.
+func _think_feed(_dt: float) -> void:
+	stop_moving()
+	if prey_target != null and is_instance_valid(prey_target):
+		_face_point(prey_target.global_position)
+	if awareness >= 1.0:
+		prey_target = null
+		_on_detected()
+		return
+	if _wait <= 0.0:
+		_wait = rng.randf_range(16.0, 26.0)
+	if state_time > _wait:
+		prey_target = null
+		stamina = 1.0
+		set_state(State.RETURN)
 
 
 # ------------------------------------------------------------------ attack
@@ -723,17 +823,45 @@ func _dormant_move(dt: float) -> void:
 func _animate(delta: float) -> void:
 	if state == State.ATTACK:
 		return
-	if _speed > (walk_speed + trot_speed) * 0.55:
-		rig.play("Run", run_anim_rate * clampf(_speed / run_speed, 0.45, 1.25), 0.2)
-	elif _speed > 0.2:
-		rig.play("Walk", walk_anim_rate * clampf(_speed / walk_speed, 0.6, 2.2), 0.3)
+	_anim_lock = maxf(_anim_lock - delta, 0.0)
+	_clip_hold = maxf(_clip_hold - delta, 0.0)
+	if _anim_lock > 0.0:
+		_ground_rig(delta)
+		return
+	# Pick the gait with hysteresis and a short minimum hold, so an animal shuffling at the edge of
+	# a threshold does not flick between clips (which made the legs twitch).
+	var run_at := (walk_speed + trot_speed) * 0.55
+	var want := _gait
+	match _gait:
+		0:
+			want = 2 if _speed > run_at else (1 if _speed > 0.35 else 0)
+		1:
+			want = 2 if _speed > run_at else (0 if _speed < 0.08 else 1)
+		2:
+			want = 2 if _speed > run_at * 0.8 else (1 if _speed > 0.3 else 0)
+	if want != _gait and _clip_hold <= 0.0:
+		_gait = want
+		_clip_hold = 0.35
+	# Playback rate follows the real ground speed (measured stride of each clip), so the paws grip
+	# the ground instead of skating over it.
+	if _gait == 2:
+		var fb := run_anim_rate * clampf(_speed / run_speed, 0.45, 1.25)
+		rig.play("Run", rig.stride_rate("Run", _speed, 0.6, lerpf(1.7, 3.0, clampf(_speed / run_speed, 0.0, 1.0)), fb), 0.2)
+	elif _gait == 1:
+		var fb := walk_anim_rate * clampf(_speed / walk_speed, 0.6, 2.2)
+		rig.play("Walk", rig.stride_rate("Walk", maxf(_speed, 0.25), 0.25, 2.0, fb), 0.3)
 	else:
 		_idle_switch -= delta
 		if _idle_switch <= 0.0 or not rig.current.begins_with("Idle"):
 			_idle_switch = rng.randf_range(5.0, 9.0)
 			_idle_clip = _pick_idle()
 		rig.play(_idle_clip, 1.0, 0.4)
-	rig.align_to_ground(world.normal_at(global_position.x, global_position.z), forward(), delta)
+	_ground_rig(delta)
+
+
+func _ground_rig(delta: float) -> void:
+	var swimming := can_swim and world.height_at(global_position.x, global_position.z) < WorldData.WATER_LEVEL - 0.9
+	rig.fit_to_ground(world, global_position, forward(), body_length * 0.5, delta, is_on_floor() and not swimming)
 
 
 func _pick_idle() -> String:

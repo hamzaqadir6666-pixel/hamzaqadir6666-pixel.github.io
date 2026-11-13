@@ -20,6 +20,7 @@ var effects: WorldEffects
 var player: Player
 var camera: ThirdPersonCamera
 var predators: PredatorManager
+var prey: PreyManager
 var built := false
 var _thread: Thread
 
@@ -93,6 +94,13 @@ func build(seed_value := 20260) -> void:
 	predators.spawn_default_roster()
 	predators.process_mode = Node.PROCESS_MODE_DISABLED
 
+	prey = PreyManager.new()
+	prey.name = "Prey"
+	add_child(prey)
+	prey.setup(data, player, predators)
+	prey.spawn_default_roster()
+	prey.process_mode = Node.PROCESS_MODE_DISABLED
+
 	ambience = Ambience.new()
 	ambience.name = "Ambience"
 	add_child(ambience)
@@ -140,6 +148,9 @@ func begin_run() -> void:
 	predators._night_pack.clear()
 	predators.spawn_default_roster()
 	predators.process_mode = Node.PROCESS_MODE_INHERIT
+	prey.clear()
+	prey.spawn_default_roster()
+	prey.process_mode = Node.PROCESS_MODE_INHERIT
 	for site in vegetation.food_sites:
 		site["amount"] = site["capacity"]
 	day_night.day = 1

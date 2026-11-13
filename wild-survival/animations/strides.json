@@ -1,0 +1,28 @@
+{
+  "res://models/animals/boar.glb": {
+    "Walk": 5.363
+  },
+  "res://models/animals/cheetah.glb": {
+    "Run": 1.862,
+    "Walk": 0.232
+  },
+  "res://models/animals/deer.glb": {
+    "Run": 0.985,
+    "Walk": 0.755
+  },
+  "res://models/animals/gazelle.glb": {
+    "Walk": 1.639
+  },
+  "res://models/animals/hyena.glb": {
+    "Run": 9.44,
+    "Walk": 2.588
+  },
+  "res://models/animals/lion.glb": {
+    "Run": 2.301,
+    "Walk": 0.287
+  },
+  "res://models/animals/tiger.glb": {
+    "Run": 1.485,
+    "Walk": 0.766
+  }
+}

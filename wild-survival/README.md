@@ -86,6 +86,14 @@ physics line-of-sight checks against terrain, trunks and rocks, hearing based on
 make, and an awareness meter that has to fill before they commit. After losing you they search around
 your last known position and then return to their patrol.
 
+### The other prey
+
+Herds of **gazelle** graze around the clearings and **boar** root about in the forest. They bolt
+from predators (and from a deer that blunders into them), and an idle lion, tiger, cheetah or hyena
+that spots one will hunt it. A predator that makes a kill stays to feed for a while and is far less
+watchful - a good moment to slip past. A herd suddenly running is a warning that something is near.
+Killed animals are replaced elsewhere in the jungle after a while.
+
 ## Project layout
 
 ```
@@ -95,6 +103,7 @@ wild-survival/
   scripts/
     autoload/     settings.gd, game_state.gd, audio_manager.gd
     player/       player.gd, third_person_camera.gd, animal_rig.gd, player_effects.gd
+    prey/         prey.gd (gazelle, boar: graze, wander, flee, die), prey_manager.gd (herds)
     predators/    predator.gd (shared brain), lion.gd, tiger.gd, cheetah.gd, hyena.gd, predator_manager.gd
     world/        world.gd, world_data.gd, terrain.gd, vegetation.gd, grass_streamer.gd,
                   flora_library.gd, day_night.gd, ambience.gd, world_effects.gd
@@ -129,7 +138,7 @@ wild-survival/
 ## Automated tests
 
 `scenes/tests/test_runner.tscn` runs the real game headless and drives it with simulated input
-(188 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
+(242 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
 behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart):
 
 ```
@@ -144,7 +153,7 @@ This project was developed in a sandbox with no GPU or display. Godot 4.7.2 was 
 there and used headless, so:
 
 - **Verified**: every asset imports; all scripts compile; all shaders compile; the test suite above
-  passes (188/188); a 20-minute unscripted soak run produced no script errors.
+  passes (242/242); a 20-minute unscripted soak run produced no script errors.
 - **Not verified on a device**: the Android export and the touch controls on a real touchscreen
   (they are tested with simulated touch events only).
 - **Not verified**: anything that needs eyes or ears. The game has never been rendered to a screen,

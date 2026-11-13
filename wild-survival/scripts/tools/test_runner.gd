@@ -146,6 +146,7 @@ func soak(minutes: float) -> void:
 	print("  [info] predator state seconds: ", hist)
 	print("  [info] bot deaths: ", deaths)
 	print("  [info] hits taken %d, seconds hunted %.0f, escapes %d, clock day %d %s" % [hits, hunted_time, GameState.escapes, world.day_night.day, world.day_night.clock_text()])
+	print("  [info] prey: %d alive of %d, %d killed by predators" % [world.prey.living(), world.prey.animals.size(), world.prey.kills])
 	check(true, "soak finished without stalling")
 
 
@@ -255,13 +256,20 @@ func probe() -> void:
 
 
 func _run() -> void:
+	if OS.get_environment("WS_STRIDES") != "":
+		measure_strides()
+		return
+	# wild-prey hunts are switched on only inside the prey tests, so they cannot disturb the others
+	world.predators.allow_hunts = false
 	if OS.get_environment("WS_PROBE") != "":
 		await probe()
 		return
 	if OS.get_environment("WS_SOAK") != "":
+		world.predators.allow_hunts = true
 		await soak(float(OS.get_environment("WS_SOAK")))
 		return
 	await test_load()
+	await test_layout()
 	await test_menu_flow()
 	await test_movement()
 	await test_collisions()
@@ -272,6 +280,8 @@ func _run() -> void:
 	await test_cheetah()
 	await test_hyena()
 	await test_escape_and_search()
+	await test_prey()
+	await test_feet()
 	await test_touch_controls()
 	await test_day_night()
 	await test_audio()
@@ -318,6 +328,386 @@ func test_load() -> void:
 	check(world.grass.active_cells() > 10, "grass streamed around player", world.grass.active_cells())
 
 
+## Measure, for every animal model, how fast the feet travel over the ground in each locomotion clip
+## at playback rate 1 (per unit of model scale). WS_STRIDES=1 writes animations/strides.json, which
+## AnimalRig uses to match animation speed to movement speed so feet do not slide.
+func measure_strides() -> void:
+	var out := {}
+	for path: String in ["lion", "tiger", "cheetah", "hyena", "deer", "gazelle", "boar"]:
+		var full := "res://models/animals/%s.glb" % path
+		var rig := AnimalRig.new()
+		add_child(rig)
+		rig.setup(full, 1.0, {"Run": "Gallop"}, not (path in ["gazelle", "boar"]))
+		var skel: Skeleton3D = rig.find_children("*", "Skeleton3D", true, false)[0]
+		var entry := {}
+		for clip: String in ["Walk", "Run"]:
+			if not rig.has(clip):
+				continue
+			var length := rig.length(clip)
+			var n := 60
+			var tracks: Array = []
+			for i in skel.get_bone_count():
+				tracks.append([])
+			rig.anim.play(clip, 0.0)
+			for k in n + 1:
+				rig.anim.seek(length * k / n, true)
+				var xf := rig.global_transform.affine_inverse() * skel.global_transform
+				for i in skel.get_bone_count():
+					(tracks[i] as Array).append(xf * skel.get_bone_global_pose(i).origin)
+			# model length, to scale thresholds
+			var zmin := INF
+			var zmax := -INF
+			for i in tracks.size():
+				zmin = minf(zmin, tracks[i][0].z)
+				zmax = maxf(zmax, tracks[i][0].z)
+			var body := zmax - zmin
+			var cands: Array = []
+			for i in tracks.size():
+				var t: Array = tracks[i]
+				var lo := INF
+				var hi := -INF
+				var ymean := 0.0
+				for v: Vector3 in t:
+					lo = minf(lo, v.z)
+					hi = maxf(hi, v.z)
+					ymean += v.y
+				if hi - lo > body * 0.08:
+					cands.append([ymean / t.size(), i])
+			cands.sort()
+			var feet: Array = []
+			for c: Array in cands:
+				var p0: Vector3 = tracks[c[1]][0]
+				var distinct := true
+				for f: int in feet:
+					var q: Vector3 = tracks[f][0]
+					if Vector2(p0.x - q.x, p0.z - q.z).length() < body * 0.12:
+						distinct = false
+				if distinct:
+					feet.append(c[1])
+				if feet.size() == 4:
+					break
+			var speeds: Array = []
+			var dt := length / n
+			for f: int in feet:
+				var t: Array = tracks[f]
+				var ylo := INF
+				var yhi := -INF
+				for v: Vector3 in t:
+					ylo = minf(ylo, v.y)
+					yhi = maxf(yhi, v.y)
+				var vs: Array = []
+				for k in range(1, n):
+					if t[k].y < ylo + (yhi - ylo) * 0.2 + 0.0001:
+						vs.append((t[k + 1].z - t[k - 1].z) / (2.0 * dt))
+				vs.sort()
+				if not vs.is_empty():
+					speeds.append(vs[vs.size() / 2])
+			# keep the bones that really are planted feet: the ones travelling at a good part of the
+			# fastest stance speed (drops tails, ears and bones that never touch the ground)
+			var top := 0.0
+			for v: float in speeds:
+				top = maxf(top, v)
+			var good: Array = []
+			for v: float in speeds:
+				if v > top * 0.5:
+					good.append(v)
+			good.sort()
+			var mean: float = good[good.size() / 2] if not good.is_empty() else 0.0
+			if good.size() > 1 and good.size() % 2 == 0:
+				mean = (good[good.size() / 2] + good[good.size() / 2 - 1]) * 0.5
+			var names: Array = []
+			for f: int in feet:
+				names.append(skel.get_bone_name(f))
+			print("  [stride] %s %s  len %.2f  feet %s  stance speeds %s  -> %.3f" % [path, clip, length, names, speeds, mean])
+			if mean > 0.05:
+				entry[clip] = snappedf(mean, 0.001)
+		out[full] = entry
+		rig.queue_free()
+	var f := FileAccess.open("res://animations/strides.json", FileAccess.WRITE)
+	f.store_string(JSON.stringify(out, "  ") + "\n")
+	f.close()
+	check(true, "strides written")
+
+
+func _on_screen(c: Control) -> bool:
+	var view := Rect2(Vector2.ZERO, c.get_viewport_rect().size).grow(1.0)
+	return c.size.x > 4.0 and c.size.y > 4.0 and view.encloses(c.get_global_rect())
+
+
+## Things a player sees first: every menu page must be laid out on screen where it belongs.
+func test_layout() -> void:
+	print("\n-- menu layout")
+	var m: Menus = main.menus
+	var view := m._root.get_viewport_rect().size
+	check(m._root.size.distance_to(view) < 2.0, "menu root covers the screen", "%s of %s" % [m._root.size, view])
+	check(_on_screen(m._main) and m._main.size.distance_to(view) < 2.0, "main menu page covers the screen", m._main.size)
+	var buttons := m._main.find_children("*", "Button", true, false)
+	var ok := buttons.size() == 4
+	for b: Button in buttons:
+		ok = ok and _on_screen(b) and b.global_position.x < view.x * 0.3 and b.size.x < 400.0
+	check(ok, "main menu buttons sit on the left, on screen", "%d buttons, first at %s" % [buttons.size(), (buttons[0] as Button).global_position])
+	m._help.show()
+	await wait(0.1)
+	check(_on_screen(m._help) and m._help.get_global_rect().get_center().x > view.x * 0.55, "help panel opens on the right, on screen", m._help.get_global_rect())
+	var overlap := false
+	for b: Button in buttons:
+		overlap = overlap or b.get_global_rect().intersects(m._help.get_global_rect())
+	check(not overlap, "help panel does not cover the buttons")
+	m._help.hide()
+	m.show_loading("Testing", 0.5)
+	await wait(0.1)
+	var bar := m._loading_bar.get_global_rect()
+	check(_on_screen(m._loading_bar) and absf(bar.get_center().x - view.x * 0.5) < 4.0 and absf(bar.get_center().y - view.y * 0.5) < 160.0,
+		"loading bar is centred on screen", "%s in %s" % [bar, view])
+	check(absf(m._loading_text.get_global_rect().get_center().x - view.x * 0.5) < 4.0 and m._loading_text.get_global_rect().end.y <= bar.position.y + 1.0,
+		"loading text is centred above the bar")
+	m._loading.hide()
+	m._open_settings(m._main)
+	await wait(0.1)
+	var panel: Control = m.settings.find_children("*", "PanelContainer", true, false)[0]
+	check(_on_screen(panel) and panel.get_global_rect().get_center().distance_to(view * 0.5) < 6.0, "settings panel is centred on screen", panel.get_global_rect())
+	var tabs: TabContainer = m.settings.find_children("*", "TabContainer", true, false)[0]
+	var fits := true
+	for i in tabs.get_tab_count():
+		tabs.current_tab = i
+		await wait(0.05)
+		fits = fits and _on_screen(panel)
+	tabs.current_tab = 0
+	check(fits, "every settings tab fits on screen")
+	m.settings.close()
+	for page: Control in [m._pause, m._over]:
+		page.show()
+		await wait(0.05)
+		var pp: Control = page.find_children("*", "PanelContainer", true, false)[0]
+		check(_on_screen(pp) and pp.get_global_rect().get_center().distance_to(view * 0.5) < 6.0, "%s panel is centred" % ("pause" if page == m._pause else "game over"), pp.get_global_rect())
+		page.hide()
+	m.show_main()
+	# HUD and touch layer
+	var hud: HUD = main.hud
+	check(hud._root.size.distance_to(view) < 2.0 and hud.touch.size.distance_to(view) < 2.0, "HUD and touch layer cover the screen", "%s %s" % [hud._root.size, hud.touch.size])
+	hud.visible = true
+	await wait(0.1)
+	var bad: PackedStringArray = []
+	for c: Control in hud._root.find_children("*", "Control", true, false):
+		if c is Container or c is ProgressBar or (c is Label and (c as Label).text != ""):
+			if c.is_visible_in_tree() and c.size.x > 0.0 and not Rect2(Vector2.ZERO, view).grow(2.0).encloses(c.get_global_rect()):
+				bad.append("%s %s" % [c.get_class(), c.get_global_rect()])
+	check(bad.is_empty(), "HUD elements are all on screen", bad)
+	hud.visible = false
+
+
+func _prey_of(kind: String) -> Prey:
+	for a in world.prey.animals:
+		if a.kind == kind and a.alive():
+			return a
+	return null
+
+
+func _place_prey(a: Prey, x: float, z: float) -> void:
+	a.respawn_at(Vector2(x, z))
+	a.process_mode = Node.PROCESS_MODE_INHERIT
+
+
+func test_prey() -> void:
+	print("\n-- prey animals")
+	isolate()
+	var pm: PreyManager = world.prey
+	var counts := {}
+	for a in pm.animals:
+		counts[a.kind] = int(counts.get(a.kind, 0)) + 1
+	check(int(counts.get("gazelle", 0)) >= 12 and int(counts.get("boar", 0)) >= 8, "herds of gazelle and boar spawned", counts)
+	var dry := true
+	for a in pm.animals:
+		dry = dry and world.data.is_walkable(a.global_position.x, a.global_position.z) and a.rig.has("Walk") and a.rig.has("Idle")
+	check(dry, "all prey stand on walkable land and have animations")
+	# park everything, then work with a few animals in a clearing
+	for a in pm.animals:
+		a.process_mode = Node.PROCESS_MODE_DISABLED
+	var c := open_spot(1)
+	teleport(c.x + 60.0, c.y + 60.0)
+	var gz := _prey_of("gazelle")
+	var boar := _prey_of("boar")
+	_place_prey(gz, c.x, c.y)
+	await wait(0.5)
+	# model orientation: the head (highest bone) must be ahead of the body
+	var skel: Skeleton3D = gz.rig.find_children("*", "Skeleton3D", true, false)[0]
+	var top := Vector3.ZERO
+	var top_y := -INF
+	for i in skel.get_bone_count():
+		var p := skel.global_transform * skel.get_bone_global_pose(i).origin
+		if p.y > top_y:
+			top_y = p.y
+			top = p
+	check((top - gz.global_position).dot(gz.forward()) > 0.1, "gazelle model faces the way it walks", "head %.2f m ahead, %.2f m up" % [(top - gz.global_position).dot(gz.forward()), top_y - gz.global_position.y])
+	check(top_y - gz.global_position.y > 0.6 and top_y - gz.global_position.y < 1.6, "gazelle is a sensible size", "%.2f m" % (top_y - gz.global_position.y))
+	check(absf(gz.global_position.y - world.data.height_at(gz.global_position.x, gz.global_position.z)) < 0.3, "gazelle stands on the ground")
+	# grazing and wandering
+	gz._wait = 0.5
+	await wait(4.0)
+	check(gz.state == Prey.State.WANDER or gz.pos2().distance_to(c) > 0.5, "prey wanders between grazing spots", "moved %.1f m" % gz.pos2().distance_to(c))
+	check(gz._speed < gz.walk_speed + 0.3, "prey walks calmly when undisturbed", "%.1f m/s" % gz._speed)
+	# the deer walks into it
+	_place_prey(gz, c.x, c.y)
+	teleport(c.x + 5.0, c.y)
+	await wait(1.5)
+	var d1 := gz.global_position.distance_to(player.global_position)
+	check(gz.is_fleeing() and d1 > 9.0, "prey bolts when the deer blunders close", "%.1f m away, %.1f m/s" % [d1, gz._speed])
+	check(gz.rig.current == "Walk" and gz.rig.anim.get_playing_speed() > 1.5, "fleeing prey plays a fast gait", "%s x%.2f" % [gz.rig.current, gz.rig.anim.get_playing_speed()])
+	teleport(c.x + 80.0, c.y + 60.0)
+	await wait(9.0)
+	check(not gz.is_fleeing() and gz._speed < 2.0, "prey calms down once the danger has gone", Prey.State.keys()[gz.state])
+	# a herd mate is warned
+	var mate: Prey = null
+	for a in pm.animals:
+		if a != gz and a.herd_id == gz.herd_id:
+			mate = a
+	_place_prey(gz, c.x, c.y)
+	_place_prey(mate, c.x + 6.0, c.y + 3.0)
+	await wait(0.3)
+	gz.startle(gz.global_position + Vector3(4, 0, 0))
+	await wait(0.3)
+	check(mate.is_fleeing(), "herd mates are warned when one bolts")
+	mate.process_mode = Node.PROCESS_MODE_DISABLED
+	gz.process_mode = Node.PROCESS_MODE_DISABLED
+	gz.global_position = Vector3(-400, 60, 400)
+	mate.global_position = Vector3(-405, 60, 400)
+
+	# a lion hunts a boar
+	var lion := _first("lion")
+	isolate(lion)
+	place(lion, c.x, c.y)
+	_place_prey(boar, c.x + 22.0, c.y)
+	lion._hunt_cd = 0.0
+	world.predators.allow_hunts = true
+	await wait(1.0)
+	check(lion.state == Predator.State.HUNT and lion.prey_target == boar, "an idle lion goes after nearby prey", lion.state_name())
+	check(lion.threat_level() == GameState.Threat.CALM, "a lion hunting prey is no threat to the deer")
+	var fled := false
+	var top_speed := 0.0
+	for i in 1200:
+		await get_tree().physics_frame
+		fled = fled or boar.is_fleeing()
+		top_speed = maxf(top_speed, boar._speed)
+		if not boar.alive():
+			break
+	check(fled and top_speed > 6.0, "the boar ran for its life", "top %.1f m/s" % top_speed)
+	check(not boar.alive() and pm.kills == 1, "the lion brought the boar down", "lion %s, boar %s" % [lion.state_name(), Prey.State.keys()[boar.state]])
+	check(lion.state == Predator.State.FEED, "the lion stays to feed on its kill", lion.state_name())
+	await wait(1.5)
+	check(absf(boar.rig.rotation.z) > 1.2 and lion._speed < 0.5, "the carcass lies on its side and the lion stands over it", "roll %.2f" % boar.rig.rotation.z)
+	# the deer shows up: the lion forgets its meal
+	teleport(lion.global_position.x + 9.0, lion.global_position.z + 3.0)
+	await wait(2.5)
+	check(lion.state == Predator.State.CHASE or lion.state == Predator.State.ATTACK or lion.state == Predator.State.SPECIAL, "a feeding lion still turns on a deer it notices", lion.state_name())
+	isolate()
+	teleport(c.x + 80.0, c.y + 60.0)
+	# a lost hunt is abandoned
+	var cheetah := _first("cheetah")
+	isolate(cheetah)
+	place(cheetah, c.x, c.y)
+	_place_prey(gz, c.x + 20.0, c.y)
+	cheetah._hunt_cd = 0.0
+	await wait(0.6)
+	check(cheetah.state == Predator.State.HUNT, "a cheetah hunts gazelle", cheetah.state_name())
+	gz.global_position = Vector3(c.x + 20.0, world.data.height_at(c.x + 20.0, c.y + 150.0), c.y + 150.0)
+	await wait(1.0)
+	check(cheetah.state != Predator.State.HUNT and cheetah.prey_target == null and gz.hunter == null, "a hunt is abandoned when the prey gets away", cheetah.state_name())
+	world.predators.allow_hunts = false
+	isolate()
+	# carcasses are recycled far from the deer
+	boar._carcass_time = 0.1
+	await wait(0.5)
+	check(boar.alive() and boar.global_position.distance_to(player.global_position) > 100.0, "a carcass is replaced by a new animal far away", "%.0f m" % boar.global_position.distance_to(player.global_position))
+	check(pm.living() == pm.animals.size(), "prey population is back to full", "%d / %d" % [pm.living(), pm.animals.size()])
+	for a in pm.animals:
+		a.process_mode = Node.PROCESS_MODE_DISABLED
+	restore_stats()
+
+
+## Feet: animation speed must match ground speed (no skating) and the body must follow the slope.
+func test_feet() -> void:
+	print("\n-- feet and ground contact")
+	isolate()
+	var table := AnimalRig.stride_table()
+	check(table.size() >= 6, "stride table loaded", table.keys().size())
+	var c := open_spot(1)
+	teleport(c.x + 70.0, c.y + 70.0)
+	for kind: String in ["lion", "cheetah", "tiger", "hyena"]:
+		var pred := _first(kind)
+		isolate(pred)
+		place(pred, c.x, c.y)
+		for gait: Array in [["walk", pred.walk_speed, 2.0], ["trot", pred.trot_speed, lerpf(1.7, 3.0, clampf(pred.trot_speed / pred.run_speed, 0.0, 1.0))]]:
+			for i in 150:
+				pred.has_target = true
+				pred.move_target = pred.global_position + pred.forward() * 8.0
+				pred.move_speed = gait[1]
+				await get_tree().physics_frame
+			var clip := pred.rig.current
+			var rate := pred.rig.anim.get_playing_speed()
+			var foot_speed: float = float(pred.rig._strides.get(clip, 0.0)) * pred.rig._scale * rate
+			var cps := rate / pred.rig.length(clip)
+			# feet either match the ground speed, or the clip is already at its fastest sensible cadence
+			var grips := absf(foot_speed - pred._speed) < pred._speed * 0.12 + 0.05
+			check((clip == "Walk" or clip == "Run") and (grips or cps > float(gait[2]) - 0.06),
+				"%s paws keep pace with the ground at a %s" % [kind, gait[0]],
+				"%s: moving %.2f m/s, feet %.2f m/s, %.2f steps/s%s" % [clip, pred._speed, foot_speed, cps, "" if grips else " (cadence limit)"])
+		# no clip flicker when creeping at the walk/idle boundary
+		var switches := 0
+		var last := pred.rig.current
+		for i in 180:
+			pred.has_target = true
+			pred.move_target = pred.global_position + pred.forward() * 5.0
+			pred.move_speed = 0.34 if (i / 6) % 2 == 0 else 0.1
+			await get_tree().physics_frame
+			if pred.rig.current != last:
+				switches += 1
+				last = pred.rig.current
+		check(switches <= 4, "%s does not flick between clips at a crawl" % kind, "%d switches in 3 s" % switches)
+		pred.stop_moving()
+	# slope: find a steady incline and stand a lion on it facing uphill
+	var lion := _first("lion")
+	isolate(lion)
+	var d := world.data
+	var spot := Vector2.ZERO
+	var best := 0.0
+	var dir := Vector2.ZERO
+	for i in 4000:
+		var x := -420.0 + fposmod(i * 37.7, 840.0)
+		var z := -420.0 + fposmod(i * 91.3, 840.0)
+		var s := d.slope_at(x, z)
+		if s > 0.08 and s < 0.2 and d.height_at(x, z) > 2.0 and s > best:
+			var n := d.normal_at(x, z)
+			var up := Vector2(-n.x, -n.z).normalized()
+			# the slope must be even under the whole body
+			var hf := d.height_at(x + up.x, z + up.y)
+			var hb := d.height_at(x - up.x, z - up.y)
+			if hf - hb > 0.35:
+				best = s
+				spot = Vector2(x, z)
+				dir = up
+	check(best > 0.0, "found a slope to stand on", "slope %.2f at %s" % [best, spot])
+	place(lion, spot.x, spot.y)
+	lion.set_state(Predator.State.REST)
+	lion._heading = atan2(-dir.x, -dir.y)
+	await wait(1.5)
+	var fwd := lion.forward()
+	var nose := lion.rig.global_transform * Vector3(0.0, 0.0, -1.0)
+	var tail := lion.rig.global_transform * Vector3(0.0, 0.0, 1.0)
+	var gf := d.height_at(nose.x, nose.z)
+	var gb := d.height_at(tail.x, tail.z)
+	check(nose.y - tail.y > 0.1 and gf > gb, "body pitches nose-up when facing uphill", "nose %.2f tail %.2f (ground %.2f / %.2f)" % [nose.y, tail.y, gf, gb])
+	check(absf((nose.y - gf) - (tail.y - gb)) < 0.25, "fore and hind feet are equally close to the ground on a slope", "front gap %.2f, rear gap %.2f" % [nose.y - gf, tail.y - gb])
+	check(fwd.length() > 0.9, "lion still upright")
+	# the deer uses the same correction
+	teleport(spot.x, spot.y, atan2(-dir.x, -dir.y))
+	isolate()
+	await wait(1.2)
+	var dn := player.rig.global_transform * Vector3(0.0, 0.0, -1.0)
+	var dt2 := player.rig.global_transform * Vector3(0.0, 0.0, 1.0)
+	check(dn.y > dt2.y + 0.05, "the deer also pitches nose-up facing uphill", "nose %.2f tail %.2f" % [dn.y, dt2.y])
+	restore_stats()
+
+
 func test_menu_flow() -> void:
 	print("\n-- menu flow")
 	check(main.flow == 1 and main.menus.current_screen() == "main", "main menu shown after loading")
@@ -326,6 +716,7 @@ func test_menu_flow() -> void:
 	await wait(0.2)
 	check(main.flow == 2 and main.hud.visible and GameState.in_game, "start button begins the game")
 	check(world.predators.predators.size() == 13, "predator roster spawned", world.predators.predators.size())
+	check(world.prey.animals.size() >= 20, "prey herds spawned", world.prey.animals.size())
 	var kinds := {}
 	for p in world.predators.predators:
 		kinds[p.species] = int(kinds.get(p.species, 0)) + 1
