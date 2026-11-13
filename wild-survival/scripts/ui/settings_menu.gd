@@ -150,7 +150,8 @@ func _controls_tab() -> Control:
 	var g := _grid("Grid")
 	g.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(g)
-	_row(g, "Mouse sensitivity", _slider("controls", "mouse_sensitivity", 0.05, 1.0, 0.01, "%"))
+	_row(g, "Touch controls", _option("controls", "touch_controls", ["Auto (on for phones)", "On", "Off"]))
+	_row(g, "Look sensitivity", _slider("controls", "mouse_sensitivity", 0.05, 1.0, 0.01, "%"))
 	_row(g, "Invert vertical look", _check("controls", "invert_y"))
 	_row(g, "Camera distance", _slider("controls", "camera_distance", 2.5, 10.0, 0.5, " m"))
 	for action: String in Settings.ACTIONS:

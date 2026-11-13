@@ -134,9 +134,10 @@ func _build_main() -> void:
 	var text := UITheme.label("", 17, UITheme.TEXT)
 	text.custom_minimum_size.x = 560
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var touch_help := Settings.touch_active()
 	text.text = "\n".join([
-		"WASD move  -  Shift sprint  -  Ctrl sneak  -  Space jump",
-		"Hold E to eat, graze or drink  -  Mouse look  -  Wheel zoom  -  Esc pause",
+		"Left stick move  -  RUN and SNEAK toggle  -  JUMP" if touch_help else "WASD move  -  Shift sprint  -  Ctrl sneak  -  Space jump",
+		"Hold EAT to eat, graze or drink  -  Drag to look  -  Pinch to zoom" if touch_help else "Hold E to eat, graze or drink  -  Mouse look  -  Wheel zoom  -  Esc pause",
 		"",
 		"Sprinting drains stamina and is loud. Sneaking and standing in bushes hides you.",
 		"Eat berry bushes and leafy plants, or graze slowly on grass. Drink at the river and lakes.",

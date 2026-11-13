@@ -27,6 +27,35 @@ over the live jungle.
 | Camera zoom | Mouse wheel |
 | Pause | Esc |
 
+### Touch controls (Android / iOS)
+
+On a phone or tablet the on-screen controls appear automatically:
+
+| Control | Where | How |
+|---|---|---|
+| Move | left side | touch and drag: the stick appears under your thumb |
+| Look | anywhere else | drag |
+| Zoom | anywhere else | pinch with two fingers |
+| RUN | bottom right | tap to toggle; ends when you let go of the stick |
+| SNEAK | bottom right | tap to toggle |
+| JUMP | bottom right | tap |
+| EAT | bottom right | hold near food, grass or water |
+| Pause | top right | tap (the Android back button also pauses) |
+
+Several fingers work at once (move, look and a button together). On a PC you can try them with
+Settings > Controls > Touch controls > On; the mouse then acts as one finger.
+
+### Exporting to Android
+
+1. In Godot: Editor > Manage Export Templates > Download and Install.
+2. Install Android Studio (for the Android SDK) and a JDK 17, then set their paths in
+   Editor Settings > Export > Android. Godot's "Exporting for Android" guide has the details.
+3. Project > Export > Add > Android. Keep the default settings (the project already enables
+   ETC2/ASTC textures and landscape orientation), then Export Project to get an `.apk`.
+
+The game starts on the Low graphics preset on phones. It is a heavy scene (dense vegetation,
+long view distance), so expect it to need a recent mid-range or better phone.
+
 ## How to survive
 
 - **Health** regenerates slowly while you are fed and watered, faster inside a safe thicket.
@@ -100,8 +129,8 @@ wild-survival/
 ## Automated tests
 
 `scenes/tests/test_runner.tscn` runs the real game headless and drives it with simulated input
-(169 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
-behaviour, escape / search / return, day-night, audio, pause, settings, death and restart):
+(188 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
+behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart):
 
 ```
 godot --headless --import
@@ -115,7 +144,9 @@ This project was developed in a sandbox with no GPU or display. Godot 4.7.2 was 
 there and used headless, so:
 
 - **Verified**: every asset imports; all scripts compile; all shaders compile; the test suite above
-  passes (169/169); a 20-minute unscripted soak run produced no script errors.
+  passes (188/188); a 20-minute unscripted soak run produced no script errors.
+- **Not verified on a device**: the Android export and the touch controls on a real touchscreen
+  (they are tested with simulated touch events only).
 - **Not verified**: anything that needs eyes or ears. The game has never been rendered to a screen,
   so lighting, fog, colour balance, material look, animation quality, particle appearance, UI layout
   and audio mix are untested and will likely need tuning. The synthesised sounds (see CREDITS.md) have

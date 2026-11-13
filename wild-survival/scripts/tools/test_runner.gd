@@ -149,7 +149,115 @@ func soak(minutes: float) -> void:
 	check(true, "soak finished without stalling")
 
 
+## Frame-by-frame smoothness probe (WS_PROBE=1): looks for visual glitches a player would notice —
+## clip flicker, heading jitter, vertical pops, speed oscillation — for every species.
+func _probe_run(pred: Predator, label: String, frames: int, keep_alive: bool) -> void:
+	var clip_switches := 0
+	var state_switches := 0
+	var last_clip := pred.rig.current
+	var last_state := pred.state
+	var last_heading := pred.rotation.y
+	var last_pos := pred.global_position
+	var last_dh := 0.0
+	var max_dh := 0.0
+	var flips := 0
+	var max_dy := 0.0
+	var max_step := 0.0
+	var speed_rev := 0
+	var last_speed := pred._speed
+	var last_ds := 0.0
+	var clips := {}
+	var states := {}
+	var max_tilt := 0.0
+	var off_ground := 0.0
+	var timeline: PackedStringArray = []
+	for i in frames:
+		await get_tree().physics_frame
+		if keep_alive:
+			player.health = player.max_health
+		if pred.rig.current != last_clip:
+			clip_switches += 1
+			last_clip = pred.rig.current
+			if timeline.size() < 40:
+				timeline.append("%.2f:%s" % [i / 60.0, last_clip])
+		if pred.state != last_state:
+			state_switches += 1
+			last_state = pred.state
+			if timeline.size() < 40:
+				timeline.append("%.2f:[%s]" % [i / 60.0, pred.state_name()])
+		clips[pred.rig.current] = int(clips.get(pred.rig.current, 0)) + 1
+		states[pred.state_name()] = int(states.get(pred.state_name(), 0)) + 1
+		var dh := angle_difference(last_heading, pred.rotation.y)
+		max_dh = maxf(max_dh, absf(dh))
+		if absf(dh) > 0.004 and absf(last_dh) > 0.004 and signf(dh) != signf(last_dh):
+			flips += 1
+		if absf(dh) > 0.004:
+			last_dh = dh
+		last_heading = pred.rotation.y
+		var d := pred.global_position - last_pos
+		max_dy = maxf(max_dy, absf(d.y))
+		max_step = maxf(max_step, Vector2(d.x, d.z).length())
+		last_pos = pred.global_position
+		var ds := pred._speed - last_speed
+		if absf(ds) > 0.02 and absf(last_ds) > 0.02 and signf(ds) != signf(last_ds):
+			speed_rev += 1
+		if absf(ds) > 0.02:
+			last_ds = ds
+		last_speed = pred._speed
+		max_tilt = maxf(max_tilt, maxf(absf(pred.rig.rotation.x), absf(pred.rig.rotation.z)))
+		off_ground = maxf(off_ground, absf(pred.global_position.y - world.data.height_at(pred.global_position.x, pred.global_position.z)))
+	print("  [probe] %-22s clips %s states %s" % [label, clips, states])
+	print("          clip switches %d, state switches %d, heading: max %.3f rad/frame, reversals %d; max dy %.3f, max step %.3f m, speed reversals %d, max tilt %.2f, off ground %.2f" % [
+		clip_switches, state_switches, max_dh, flips, max_dy, max_step, speed_rev, max_tilt, off_ground])
+	print("          timeline ", " ".join(timeline))
+
+
+func probe() -> void:
+	print("\n-- glitch probe")
+	main.menus.start_requested.emit()
+	await wait(0.5)
+	world.day_night.set_time(12.0)
+	world.day_night.paused = true
+	for kind: String in ["lion", "cheetah", "tiger", "hyena"]:
+		var pred := _first(kind)
+		# 1: patrolling 30 m from a hidden, motionless deer
+		isolate(pred)
+		restore_stats()
+		var s := open_spot(1)
+		teleport(s.x, s.y)
+		place(pred, s.x + 30.0, s.y)
+		pred.awareness = 0.0
+		pred.vision_range = 0.01
+		pred.hearing = 0.0
+		pred.set_state(Predator.State.PATROL)
+		await _probe_run(pred, kind + " patrol", 1500, true)
+		# 2: resting next to the deer
+		pred.set_state(Predator.State.REST)
+		pred._wait = 999.0
+		await _probe_run(pred, kind + " rest", 600, true)
+		# 3: full hunt on a deer that stands still
+		pred._configure()
+		await _setup_encounter(pred, 22.0, 1, true)
+		pred.last_known = player.global_position
+		pred.awareness = 1.0
+		pred._on_detected()
+		await _probe_run(pred, kind + " hunt standing deer", 1200, true)
+		# 4: hunt on a deer running away
+		await _setup_encounter(pred, 22.0, 1, true)
+		world.camera.rotation.y = 0.0
+		Input.action_press("move_forward")
+		Input.action_press("sprint")
+		pred.last_known = player.global_position
+		pred.awareness = 1.0
+		pred._on_detected()
+		await _probe_run(pred, kind + " hunt fleeing deer", 1800, true)
+		release_all()
+
+
 func _run() -> void:
+	if OS.get_environment("WS_PROBE") != "":
+		await probe()
+		return
 	if OS.get_environment("WS_SOAK") != "":
 		await soak(float(OS.get_environment("WS_SOAK")))
 		return
@@ -164,6 +272,7 @@ func _run() -> void:
 	await test_cheetah()
 	await test_hyena()
 	await test_escape_and_search()
+	await test_touch_controls()
 	await test_day_night()
 	await test_audio()
 	await test_pause_settings()
@@ -743,6 +852,127 @@ func test_escape_and_search() -> void:
 func place_keep_state(pred: Predator, x: float, z: float) -> void:
 	pred.global_position = Vector3(x, world.data.height_at(x, z) + 0.2, z)
 	pred.reset_physics_interpolation()
+
+
+func _touch(index: int, pos: Vector2, pressed: bool) -> void:
+	# positions are given in UI (stretched viewport) units; real events arrive in window pixels
+	var ev := InputEventScreenTouch.new()
+	ev.index = index
+	ev.position = get_viewport().get_final_transform() * pos
+	ev.pressed = pressed
+	Input.parse_input_event(ev)
+
+
+func _drag(index: int, pos: Vector2, rel: Vector2) -> void:
+	var ev := InputEventScreenDrag.new()
+	ev.index = index
+	var xf := get_viewport().get_final_transform()
+	ev.position = xf * pos
+	ev.relative = xf.basis_xform(rel)
+	Input.parse_input_event(ev)
+
+
+func test_touch_controls() -> void:
+	print("\n-- touch controls")
+	var tc: TouchControls = main.hud.touch
+	isolate()
+	check(not tc.is_active(), "touch controls stay hidden on desktop (auto)")
+	Settings.set_value("controls", "touch_controls", 1, false)
+	await wait(0.1)
+	check(tc.is_active(), "touch controls can be switched on")
+	check(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE, "mouse is not grabbed while touch controls are on")
+	var size := get_viewport().get_visible_rect().size
+	var s := open_spot(1)
+	teleport(s.x, s.y)
+	world.camera.rotation.y = 0.0
+	restore_stats()
+	await wait(0.3)
+	# stick: finger down in the lower left, pushed up = forward
+	var base := Vector2(260.0, size.y - 250.0)
+	var p0 := player.global_position
+	_touch(0, base, true)
+	_drag(0, base + Vector2(0.0, -130.0), Vector2(0.0, -130.0))
+	await wait(1.5)
+	var walked := player.global_position - p0
+	check(walked.z < -3.0 and absf(walked.x) < 1.5, "stick pushed up moves the deer forward", "moved %.1f m forward" % -walked.z)
+	check(Input.get_vector("move_left", "move_right", "move_forward", "move_back").y < -0.9, "stick drives the movement actions")
+	# RUN toggle with a second finger while the stick is held
+	var run_pos: Vector2 = tc._buttons["sprint"]["pos"]
+	_touch(1, run_pos, true)
+	_touch(1, run_pos, false)
+	await wait(1.2)
+	check(player.is_sprinting, "RUN toggles sprinting (second finger)", "speed %.1f" % player._speed)
+	# look with a third finger: drag on the right half turns the camera
+	var yaw0 := world.camera.rotation.y
+	var look := Vector2(size.x * 0.62, size.y * 0.3)
+	_touch(2, look, true)
+	_drag(2, look + Vector2(120.0, 0.0), Vector2(120.0, 0.0))
+	await wait(0.1)
+	check(absf(angle_difference(yaw0, world.camera.rotation.y)) > 0.1, "dragging the right side turns the camera",
+		"%.2f rad" % angle_difference(yaw0, world.camera.rotation.y))
+	check(Input.get_vector("move_left", "move_right", "move_forward", "move_back").y < -0.9, "looking does not disturb the stick")
+	_touch(2, look, false)
+	# releasing the stick stops the deer and ends the run
+	_touch(0, base, false)
+	await wait(1.0)
+	check(player._speed < 0.3 and not Input.is_action_pressed("sprint"), "releasing the stick stops the deer and the run", "speed %.2f" % player._speed)
+	# JUMP
+	var y0 := player.global_position.y
+	var jump_pos: Vector2 = tc._buttons["jump"]["pos"]
+	_touch(0, jump_pos, true)
+	var top := y0
+	for i in 40:
+		await get_tree().physics_frame
+		top = maxf(top, player.global_position.y)
+	_touch(0, jump_pos, false)
+	check(top > y0 + 0.5, "JUMP button jumps", "+%.2f m" % (top - y0))
+	check(not Input.is_action_pressed("jump"), "JUMP is a single tap, not held")
+	await wait(0.8)
+	# EAT is a hold button
+	var eat_pos: Vector2 = tc._buttons["interact"]["pos"]
+	_touch(0, eat_pos, true)
+	await wait(0.1)
+	var held := Input.is_action_pressed("interact")
+	_touch(0, eat_pos, false)
+	await wait(0.1)
+	check(held and not Input.is_action_pressed("interact"), "EAT is held while the finger is down")
+	# SNEAK toggle
+	var sneak_pos: Vector2 = tc._buttons["sneak"]["pos"]
+	_touch(0, sneak_pos, true)
+	_touch(0, sneak_pos, false)
+	await wait(0.2)
+	check(Input.is_action_pressed("sneak"), "SNEAK toggles on")
+	_touch(0, sneak_pos, true)
+	_touch(0, sneak_pos, false)
+	await wait(0.2)
+	check(not Input.is_action_pressed("sneak"), "SNEAK toggles off")
+	# pinch zoom with two fingers on the right
+	var d0: float = world.camera._distance
+	_touch(3, Vector2(size.x * 0.55, size.y * 0.3), true)
+	_touch(4, Vector2(size.x * 0.75, size.y * 0.3), true)
+	_drag(4, Vector2(size.x * 0.65, size.y * 0.3), Vector2(-size.x * 0.1, 0.0))
+	await wait(0.1)
+	check(world.camera._distance > d0 + 0.3, "pinching in zooms the camera out", "%.1f -> %.1f m" % [d0, world.camera._distance])
+	_touch(3, Vector2.ZERO, false)
+	_touch(4, Vector2.ZERO, false)
+	world.camera._distance = d0
+	# pause button, and everything is let go while paused
+	_touch(0, base, true)
+	_drag(0, base + Vector2(0.0, -130.0), Vector2(0.0, -130.0))
+	await wait(0.2)
+	var pause_pos: Vector2 = tc._buttons["pause"]["pos"]
+	_touch(1, pause_pos, true)
+	_touch(1, pause_pos, false)
+	await wait(0.3)
+	check(main.flow == 3 and get_tree().paused, "pause button opens the pause menu")
+	check(not Input.is_action_pressed("move_forward"), "pausing releases the stick")
+	main.resume()
+	await wait(0.3)
+	check(main.flow == 2, "game resumes")
+	Settings.set_value("controls", "touch_controls", 0, false)
+	await wait(0.1)
+	check(not tc.is_active() and not Input.emulate_touch_from_mouse, "touch controls can be switched off again")
+	release_all()
 
 
 func test_day_night() -> void:

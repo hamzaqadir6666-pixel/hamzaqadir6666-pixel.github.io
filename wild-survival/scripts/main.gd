@@ -24,6 +24,7 @@ func _ready() -> void:
 	menus.menu_requested.connect(to_menu)
 	menus.quit_requested.connect(func() -> void: get_tree().quit())
 	menus.show_loading("Loading...", 0.0)
+	Settings.changed.connect(_on_settings_changed)
 
 	world = WORLD_SCENE.instantiate()
 	world.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -72,7 +73,7 @@ func start_game() -> void:
 	hud.visible = true
 	menus.hide_all()
 	flow = Flow.PLAYING
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_capture_mouse()
 	AudioManager.play_music("day", 3.0, -15.0)
 	GameState.notify("Survive", "Eat, drink, stay hidden. Find the safe thickets before nightfall.")
 
@@ -92,7 +93,7 @@ func resume() -> void:
 	flow = Flow.PLAYING
 	menus.hide_all()
 	get_tree().paused = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_capture_mouse()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -108,6 +109,26 @@ func _unhandled_input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and flow == Flow.PLAYING:
 		pause()
+	elif what == NOTIFICATION_APPLICATION_PAUSED and flow == Flow.PLAYING:
+		pause()   # the app was sent to the background on a phone
+	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		# Android back button / gesture
+		if flow == Flow.PLAYING:
+			pause()
+		elif flow == Flow.PAUSED and not menus.is_settings_open():
+			resume()
+
+
+## The mouse is only grabbed for mouse-look. With touch controls the pointer stays free:
+## fingers also produce emulated mouse events, and a grabbed pointer would turn the camera
+## with every finger on the screen.
+func _capture_mouse() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Settings.touch_active() else Input.MOUSE_MODE_CAPTURED
+
+
+func _on_settings_changed(section: String, _key: String) -> void:
+	if section == "controls" and flow == Flow.PLAYING:
+		_capture_mouse()
 
 
 func _process(delta: float) -> void:

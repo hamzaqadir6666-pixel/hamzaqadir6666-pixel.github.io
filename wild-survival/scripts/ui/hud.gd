@@ -22,6 +22,8 @@ var _hint: Label
 var _notes: VBoxContainer
 var _vignette: ColorRect
 var _discoveries: Label
+var _stats: PanelContainer
+var touch: TouchControls
 var _flash := 0.0
 var _pulse := 0.0
 
@@ -121,11 +123,47 @@ func _ready() -> void:
 	_notes.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_notes)
 
+	# --- touch controls (phones / tablets); the bars move up out of the left thumb's way
+	_stats = stats
+	touch = TouchControls.new()
+	touch.name = "TouchControls"
+	_root.add_child(touch)
+	Settings.changed.connect(func(section: String, _key: String) -> void:
+		if section == "controls":
+			_apply_touch_layout())
+	_apply_touch_layout()
+
 	GameState.notification_posted.connect(_on_notification)
 	GameState.threat_changed.connect(_on_threat_changed)
 
 
+## With touch controls the bottom corners belong to the thumbs: survival bars go under the clock
+## (top left) and notifications drop below the pause button (top right).
+func _apply_touch_layout() -> void:
+	if Settings.touch_active():
+		_dock(_stats, Control.PRESET_TOP_LEFT, Vector2(28, 122))
+		_dock(_status, Control.PRESET_TOP_LEFT, Vector2(30, 262))
+		_dock(_notes, Control.PRESET_TOP_RIGHT, Vector2(-28, 140))
+		_dock(_hint, Control.PRESET_CENTER_BOTTOM, Vector2(0, -80))
+	else:
+		_dock(_stats, Control.PRESET_BOTTOM_LEFT, Vector2(28, -70))
+		_dock(_status, Control.PRESET_BOTTOM_LEFT, Vector2(30, -206))
+		_dock(_notes, Control.PRESET_TOP_RIGHT, Vector2(-28, 24))
+		_dock(_hint, Control.PRESET_CENTER_BOTTOM, Vector2(0, -120))
+
+
+## Snap a control to a corner / edge of the screen at its minimum size, then nudge it inward.
+## Works through anchors and offsets, so it is correct whatever the screen size is.
+func _dock(c: Control, preset: Control.LayoutPreset, nudge: Vector2) -> void:
+	c.set_anchors_and_offsets_preset(preset, Control.PRESET_MODE_MINSIZE)
+	c.offset_left += nudge.x
+	c.offset_right += nudge.x
+	c.offset_top += nudge.y
+	c.offset_bottom += nudge.y
+
+
 func bind(p_player: Player, p_day_night: DayNight, p_predators: PredatorManager, p_camera: ThirdPersonCamera) -> void:
+	touch.camera = p_camera
 	player = p_player
 	day_night = p_day_night
 	predators = p_predators

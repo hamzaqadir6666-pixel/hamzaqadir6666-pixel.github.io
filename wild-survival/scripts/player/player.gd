@@ -268,7 +268,7 @@ func _interact(delta: float, want: bool, moving: bool) -> void:
 	_food_site = vegetation.nearest_food(global_position, 2.8) if vegetation != null else {}
 	var drink_ok := can_drink()
 	var graze_ok := is_on_floor() and world.surface_at(global_position.x, global_position.z) == &"grass"
-	var key := Settings.binding_text("interact")
+	var key := "EAT" if Settings.touch_active() else Settings.binding_text("interact")
 	if drink_ok and thirst < 99.0:
 		hint = "Hold [%s] to drink" % key
 	elif not _food_site.is_empty() and hunger < 99.0:

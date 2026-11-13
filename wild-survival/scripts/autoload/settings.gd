@@ -32,7 +32,7 @@ const DEFAULTS := {
 		"fov": 70.0,
 	},
 	"audio": {"master": 0.9, "music": 0.55, "sfx": 0.9, "ambience": 0.8},
-	"controls": {"mouse_sensitivity": 0.5, "invert_y": false, "camera_distance": 5.5},
+	"controls": {"mouse_sensitivity": 0.5, "invert_y": false, "camera_distance": 5.5, "touch_controls": 0}, # touch: 0 auto, 1 on, 2 off
 	"keys": {},
 }
 
@@ -49,9 +49,29 @@ var data: Dictionary = {}
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	data = DEFAULTS.duplicate(true)
+	if is_mobile() and not FileAccess.file_exists(PATH):
+		# first launch on a phone or tablet: start from the lightest graphics preset
+		data["graphics"]["preset"] = 0
+		for k: String in PRESETS[0]:
+			data["graphics"][k] = PRESETS[0][k]
 	_load()
 	_register_actions()
 	apply_all()
+
+
+func is_mobile() -> bool:
+	return OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios")
+
+
+## True when the on-screen touch controls should be used (Settings > Controls > Touch controls).
+## "Auto" turns them on for Android / iOS only, so a touchscreen laptop keeps mouse and keyboard.
+func touch_active() -> bool:
+	match int(get_value("controls", "touch_controls")):
+		1:
+			return true
+		2:
+			return false
+	return is_mobile()
 
 
 func get_value(section: String, key: String) -> Variant:
@@ -97,6 +117,9 @@ func _apply(section: String) -> void:
 	match section:
 		"graphics":
 			_apply_graphics()
+		"controls":
+			# forcing touch controls on a desktop lets the mouse stand in for one finger
+			Input.emulate_touch_from_mouse = touch_active() and not is_mobile()
 		"audio":
 			for bus: String in ["master", "music", "sfx", "ambience"]:
 				var idx := AudioServer.get_bus_index(bus.capitalize())

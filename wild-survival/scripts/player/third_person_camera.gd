@@ -58,6 +58,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			_distance = minf(_distance + 0.5, 10.0)
 
 
+## Look input from the touch overlay (pixels dragged).
+func add_look(motion: Vector2) -> void:
+	if not input_enabled:
+		return
+	var sens := lerpf(0.0008, 0.0065, float(Settings.get_value("controls", "mouse_sensitivity")))
+	rotation.y -= motion.x * sens
+	var inv := -1.0 if bool(Settings.get_value("controls", "invert_y")) else 1.0
+	_pitch = clampf(_pitch - motion.y * sens * inv, -1.25, 0.55)
+
+
+## Pinch zoom from the touch overlay (metres; positive moves the camera back).
+func zoom_by(amount: float) -> void:
+	_distance = clampf(_distance + amount, 2.5, 10.0)
+
+
 ## Slow orbit used behind the main menu.
 func orbit(delta: float, speed := 0.06) -> void:
 	_orbit += delta

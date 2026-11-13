@@ -89,6 +89,8 @@ var _wait := 0.0
 var _dormant_tick := 0
 var _voice: AudioStreamPlayer3D
 var _step_accum := 0.0
+var _face_pos := Vector3.ZERO
+var _face_time := 0.0
 
 
 func _ready() -> void:
@@ -457,10 +459,15 @@ func _think_chase(_dt: float) -> void:
 	if tracking:
 		var lead := player.velocity * clampf(player_distance / maxf(current_run_speed(), 1.0), 0.0, 0.8)
 		lead.y = 0.0
-		go_to(player.global_position + lead, current_run_speed())
 		if player_distance < attack_range + 0.5 and _attack_cd <= 0.0 and not player.in_grove:
 			_begin_attack()
 			return
+		if player_distance < attack_range * 0.7:
+			# already on top of the prey: hold ground and keep facing it until the next strike
+			stop_moving()
+			_face_point(player.global_position)
+		else:
+			go_to(player.global_position + lead, _closing_speed())
 	else:
 		go_to(last_known + last_known_dir * 6.0, current_run_speed() * 0.85)
 		if time_since_contact > lose_sight_time:
@@ -546,10 +553,14 @@ func _attack_update(_delta: float) -> void:
 	var t := state_time / attack_anim_time
 	if t < 0.5:
 		# lunge
-		var lead := player.global_position
-		go_to(lead, run_speed * 0.75)
+		if player_distance > attack_range * 0.6:
+			go_to(player.global_position, minf(run_speed * 0.75, _closing_speed() + 2.0))
+		else:
+			stop_moving()
+			_face_point(player.global_position)
 	else:
 		stop_moving()
+		_face_point(player.global_position)
 	if not _attack_hit_done and t >= 0.42:
 		_attack_hit_done = true
 		var to := player.global_position - global_position
@@ -579,19 +590,35 @@ func _after_attack() -> void:
 
 # ------------------------------------------------------------------ movement
 
+## Turn on the spot toward a point. The turn itself happens smoothly in _steer(), every frame;
+## snapping the heading here (thinking runs only a few times per second) made the animal jerk round.
 func _face_point(p: Vector3) -> void:
-	var d := p - global_position
-	if Vector2(d.x, d.z).length() > 0.2:
-		_heading = rotate_toward(_heading, atan2(-d.x, -d.z), 0.25)
+	_face_pos = p
+	_face_time = 0.6
 
 
 func _speed_limit() -> float:
 	return 99.0
 
 
+## Speed for closing on the prey. Far away this is the full run speed; within a few metres the
+## predator only moves a little faster than its prey, so it settles in front of a deer that has
+## stopped instead of barging through it and looping back at a sprint.
+func _closing_speed() -> float:
+	var pv := player.velocity
+	pv.y = 0.0
+	var gap := maxf(player_distance - attack_range * 0.7, 0.0)
+	return minf(current_run_speed(), pv.length() + 1.0 + gap * 2.5)
+
+
 func _steer(delta: float) -> void:
 	var target_speed := 0.0
 	var desired_heading := _heading
+	_face_time = maxf(_face_time - delta, 0.0)
+	if not has_target and _face_time > 0.0:
+		var fd := _face_pos - global_position
+		if Vector2(fd.x, fd.z).length() > 0.2:
+			desired_heading = atan2(-fd.x, -fd.z)
 	if has_target:
 		var to := move_target - global_position
 		to.y = 0.0
