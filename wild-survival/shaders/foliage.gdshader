@@ -12,6 +12,7 @@ uniform float sway_start_height = 1.0;   // local height where sway begins (trun
 uniform float sway_height_scale = 0.08;  // sway growth per metre above start
 uniform float flutter = 0.06;            // small per-leaf shimmer
 uniform float backlight : hint_range(0.0, 1.0) = 0.45;
+uniform float brightness = 0.82;         // overall albedo scale (source textures are pale)
 uniform float roughness_value = 0.75;
 uniform float push_radius = 0.0;         // >0: bends away from the player (bushes/grass)
 uniform vec3 player_pos = vec3(0.0, -1000.0, 0.0);
@@ -45,11 +46,11 @@ void fragment() {
 	vec4 a = texture(albedo_tex, UV);
 	ALPHA = a.a;
 	ALPHA_SCISSOR_THRESHOLD = alpha_cutoff;
-	ALBEDO = a.rgb * tint;
+	ALBEDO = a.rgb * tint * brightness;
 	ROUGHNESS = roughness_value;
 	// two-sided lighting: flip normals on back faces
 	if (!FRONT_FACING) {
 		NORMAL = -NORMAL;
 	}
-	BACKLIGHT = vec3(backlight) * a.rgb * vec3(0.9, 1.0, 0.5);
+	BACKLIGHT = vec3(backlight * 0.5) * a.rgb * vec3(0.9, 1.0, 0.5);
 }

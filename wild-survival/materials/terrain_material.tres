@@ -42,7 +42,3 @@ shader_parameter/rock_normal = ExtResource("11_51txv")
 shader_parameter/sand_albedo = ExtResource("12_3b634")
 shader_parameter/sand_normal = ExtResource("13_ba3fr")
 shader_parameter/macro_noise = SubResource("NoiseTexture2D_tppvj")
-shader_parameter/uv_scale = null
-shader_parameter/normal_strength = null
-shader_parameter/grass_tint = null
-shader_parameter/wet_darkening = null

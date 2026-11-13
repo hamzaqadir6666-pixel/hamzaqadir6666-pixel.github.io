@@ -51,6 +51,7 @@ var _speed := 0.0
 var _invulnerable := 0.0
 var _since_damage := 99.0
 var _sprint_rest := 0.0
+const BREATH_MAX_GAIN := 0.14   # linear gain of the panting loop at full exhaustion (about -17 dB)
 var _step_accum := 0.0
 var _air_time := 0.0
 var _idle_time := 0.0
@@ -487,7 +488,9 @@ func _footsteps(delta: float) -> void:
 	_step_accum = 0.0
 	var surface := world.surface_at(global_position.x, global_position.z)
 	var path := ""
-	var vol := lerpf(-17.0, -5.0, clampf(_speed / SPRINT_SPEED, 0.0, 1.0))
+	# Hoofbeats are only slightly louder at a gallop than at a walk, and the level depends on
+	# the current speed alone, so it can never build up over the length of a sprint.
+	var vol := lerpf(-17.0, -11.0, clampf(_speed / SPRINT_SPEED, 0.0, 1.0))
 	match surface:
 		&"water":
 			path = "res://audio/deer/splash.ogg"
@@ -511,10 +514,10 @@ func _footsteps(delta: float) -> void:
 
 func _update_audio(delta: float) -> void:
 	var tired := 1.0 - stamina / max_stamina
-	var pant := smoothstep(0.35, 0.85, tired)
-	if is_sprinting:
-		pant = maxf(pant, 0.25)
-	_breath.volume_db = lerpf(_breath.volume_db, linear_to_db(maxf(pant * 0.7, 0.0001)), minf(delta * 3.0, 1.0))
+	# Panting only comes in when the deer is nearly out of breath, and stays well under the
+	# hoofbeats: it used to swell steadily through a whole sprint and drown everything else.
+	var pant := smoothstep(0.6, 0.95, tired)
+	_breath.volume_db = lerpf(_breath.volume_db, linear_to_db(maxf(pant * BREATH_MAX_GAIN, 0.0001)), minf(delta * 3.0, 1.0))
 	_breath.pitch_scale = lerpf(0.92, 1.12, pant)
 	var danger := 1.0 - smoothstep(0.12, 0.4, health / max_health)
 	if GameState.threat == GameState.Threat.HUNTED:

@@ -32,6 +32,10 @@ const FOG_NIGHT := Color(0.016, 0.024, 0.045)
 const FOG_SUNSET := Color(0.86, 0.52, 0.30)
 const SUN_NOON := Color(1.0, 0.96, 0.88)
 const SUN_LOW := Color(1.0, 0.56, 0.28)
+# Daylight balance. These three set how bright the day looks; lower them if it still looks washed out.
+const SUN_ENERGY := 1.15
+const DAY_AMBIENT := 0.5
+const DAY_EXPOSURE := 0.85
 
 
 static func build_environment() -> Environment:
@@ -57,11 +61,11 @@ static func build_environment() -> Environment:
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	e.ambient_light_color = Color(0.25, 0.32, 0.42)
-	e.ambient_light_sky_contribution = 0.75
-	e.ambient_light_energy = 1.0
+	e.ambient_light_sky_contribution = 0.5
+	e.ambient_light_energy = DAY_AMBIENT
 	e.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	e.tonemap_mode = Environment.TONE_MAPPER_ACES
-	e.tonemap_exposure = 1.0
+	e.tonemap_exposure = DAY_EXPOSURE
 	e.tonemap_white = 6.0
 	e.ssao_enabled = true
 	e.ssao_radius = 1.4
@@ -69,30 +73,30 @@ static func build_environment() -> Environment:
 	e.ssao_power = 1.6
 	e.ssao_light_affect = 0.15
 	e.glow_enabled = true
-	e.glow_intensity = 0.55
-	e.glow_bloom = 0.06
-	e.glow_hdr_threshold = 1.1
+	e.glow_intensity = 0.3
+	e.glow_bloom = 0.0
+	e.glow_hdr_threshold = 1.4
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	e.fog_density = 0.0055
+	e.fog_density = 0.0022
 	e.fog_light_color = FOG_DAY
-	e.fog_sun_scatter = 0.25
-	e.fog_aerial_perspective = 0.45
+	e.fog_sun_scatter = 0.1
+	e.fog_aerial_perspective = 0.3
 	e.fog_sky_affect = 0.25
 	e.fog_height = 30.0
-	e.fog_height_density = 0.02
+	e.fog_height_density = 0.0
 	e.volumetric_fog_enabled = true
-	e.volumetric_fog_density = 0.006
-	e.volumetric_fog_albedo = Color(0.86, 0.93, 0.86)
+	e.volumetric_fog_density = 0.002
+	e.volumetric_fog_albedo = Color(0.7, 0.78, 0.72)
 	e.volumetric_fog_anisotropy = 0.72
 	e.volumetric_fog_length = 110.0
 	e.volumetric_fog_detail_spread = 2.2
-	e.volumetric_fog_ambient_inject = 0.25
+	e.volumetric_fog_ambient_inject = 0.0
 	e.volumetric_fog_sky_affect = 0.0
 	e.volumetric_fog_temporal_reprojection_enabled = true
 	e.adjustment_enabled = true
-	e.adjustment_saturation = 1.06
-	e.adjustment_contrast = 1.04
+	e.adjustment_saturation = 1.15
+	e.adjustment_contrast = 1.1
 	return e
 
 
@@ -119,7 +123,7 @@ func _ready() -> void:
 	sun.shadow_normal_bias = 1.6
 	sun.shadow_blur = 1.2
 	sun.light_angular_distance = 0.6
-	sun.light_volumetric_fog_energy = 1.6
+	sun.light_volumetric_fog_energy = 0.8
 	sun.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
 	add_child(sun)
 
@@ -204,7 +208,7 @@ func _update_lighting() -> void:
 		phase_changed.emit(phase)
 
 	# sun
-	var sun_energy := smoothstep(-0.04, 0.22, elev) * 1.35
+	var sun_energy := smoothstep(-0.04, 0.22, elev) * SUN_ENERGY
 	sun.visible = sun_energy > 0.01
 	if sun.visible:
 		sun.look_at_from_position(Vector3.ZERO, -to_sun, Vector3.UP)
@@ -232,11 +236,11 @@ func _update_lighting() -> void:
 	env.fog_light_color = fog
 	# morning mist, thicker night air
 	var mist := (1.0 - smoothstep(0.0, 0.5, absf(time_of_day - 6.2) / 2.0)) * 0.006
-	env.fog_density = lerpf(0.0085, 0.0052, day_factor) + mist
-	env.volumetric_fog_density = lerpf(0.005, 0.0065, day_factor) + mist * 1.5
-	env.volumetric_fog_albedo = Color(0.5, 0.6, 0.8).lerp(Color(0.86, 0.93, 0.86), day_factor)
+	env.fog_density = lerpf(0.005, 0.0022, day_factor) + mist * 0.5
+	env.volumetric_fog_density = lerpf(0.003, 0.002, day_factor) + mist
+	env.volumetric_fog_albedo = Color(0.5, 0.6, 0.8).lerp(Color(0.7, 0.78, 0.72), day_factor)
 	env.ambient_light_color = Color(0.10, 0.14, 0.24).lerp(Color(0.42, 0.50, 0.52), day_factor)
-	env.ambient_light_energy = lerpf(0.55, 1.0, day_factor)
-	env.tonemap_exposure = lerpf(1.25, 1.0, day_factor)
+	env.ambient_light_energy = lerpf(0.55, DAY_AMBIENT, day_factor)
+	env.tonemap_exposure = lerpf(1.25, DAY_EXPOSURE, day_factor)
 	if water_material != null:
 		water_material.set_shader_parameter("night_factor", night_factor)

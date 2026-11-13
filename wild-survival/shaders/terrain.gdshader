@@ -25,6 +25,7 @@ uniform float uv_scale = 0.22;
 uniform float normal_strength = 1.0;
 uniform vec3 grass_tint : source_color = vec3(0.78, 0.92, 0.62);
 uniform float wet_darkening = 0.45;
+uniform float brightness = 0.8;   // overall albedo scale (source textures are pale)
 
 varying vec3 world_pos;
 
@@ -102,7 +103,7 @@ void fragment() {
 	alb = mix(alb, r, w_rock); nrm = mix(nrm, texture(rock_normal, uv * 0.6).rgb, w_rock);
 	rough = mix(rough, 0.8, w_rock);
 
-	ALBEDO = alb.rgb;
+	ALBEDO = alb.rgb * brightness;
 	ROUGHNESS = rough;
 	SPECULAR = 0.3;
 	NORMAL_MAP = nrm;
