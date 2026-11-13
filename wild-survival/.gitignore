@@ -1,0 +1,7 @@
+.godot/
+*.translation
+export_presets.cfg
+models/**/*.png
+models/**/*.png.import
+models/**/*.jpg
+models/**/*.jpg.import

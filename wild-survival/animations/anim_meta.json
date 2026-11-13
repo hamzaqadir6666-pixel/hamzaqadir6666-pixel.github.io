@@ -1,0 +1,111 @@
+{
+ "tiger": {
+  "Walk": {
+   "stride_speed": 0.768,
+   "length": 2.042
+  },
+  "Run": {
+   "stride_speed": 1.444,
+   "length": 2.042
+  },
+  "Idle": {
+   "length": 6.625
+  },
+  "Idle2": {
+   "length": 6.417
+  },
+  "Idle3": {
+   "length": 4.167
+  },
+  "Attack": {
+   "length": 1.875
+  },
+  "Attack2": {
+   "length": 3.208
+  },
+  "Death": {
+   "length": 1.208
+  }
+ },
+ "lion": {
+  "Walk": {
+   "stride_speed": 0.294,
+   "length": 3.333
+  },
+  "Run": {
+   "stride_speed": 2.349,
+   "length": 1.333
+  },
+  "Idle": {
+   "length": 6.667
+  },
+  "Idle2": {
+   "length": 6.667
+  },
+  "Idle3": {
+   "length": 6.667
+  },
+  "Death": {
+   "length": 1.867
+  },
+  "Attack": {
+   "length": 0.9
+  }
+ },
+ "cheetah": {
+  "Walk": {
+   "stride_speed": 0.238,
+   "length": 3.333
+  },
+  "Run": {
+   "stride_speed": 1.901,
+   "length": 1.333
+  },
+  "Idle": {
+   "length": 6.667
+  },
+  "Idle2": {
+   "length": 6.667
+  },
+  "Idle3": {
+   "length": 6.667
+  },
+  "Death": {
+   "length": 1.867
+  },
+  "Attack": {
+   "length": 0.9
+  }
+ },
+ "deer": {
+  "Walk": {
+   "stride_speed": 0.648,
+   "length": 1.033
+  },
+  "Run": {
+   "stride_speed": 0.413,
+   "length": 1.467
+  },
+  "Idle": {
+   "length": 3.333
+  },
+  "Idle2": {
+   "length": 3.333
+  },
+  "Idle3": {
+   "length": 3.333
+  },
+  "Eat": {
+   "length": 3.333
+  },
+  "Attack": {
+   "length": 1.3
+  },
+  "Death": {
+   "length": 1.083
+  },
+  "Jump": {
+   "length": 1.467
+  }
+ }
+}

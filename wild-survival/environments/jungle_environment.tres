@@ -1,0 +1,54 @@
+[gd_resource type="Environment" format=3]
+
+[ext_resource type="Shader" path="res://shaders/sky.gdshader" id="1_nmeh8"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_ecirj"]
+frequency = 0.008
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_d5gil"]
+noise = SubResource("FastNoiseLite_ecirj")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7owpk"]
+shader = ExtResource("1_nmeh8")
+shader_parameter/noise_tex = SubResource("NoiseTexture2D_d5gil")
+
+[sub_resource type="Sky" id="Sky_x3eli"]
+sky_material = SubResource("ShaderMaterial_7owpk")
+process_mode = 3
+
+[resource]
+background_mode = 2
+sky = SubResource("Sky_x3eli")
+ambient_light_source = 3
+ambient_light_color = Color(0.25, 0.32, 0.42, 1)
+ambient_light_sky_contribution = 0.5
+ambient_light_energy = 0.5
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_exposure = 0.85
+tonemap_white = 6.0
+ssao_enabled = true
+ssao_radius = 1.4
+ssao_intensity = 2.2
+ssao_power = 1.6
+ssao_light_affect = 0.15
+glow_enabled = true
+glow_hdr_threshold = 1.4
+fog_enabled = true
+fog_light_color = Color(0.6, 0.7, 0.64, 1)
+fog_sun_scatter = 0.1
+fog_density = 0.0022
+fog_aerial_perspective = 0.3
+fog_sky_affect = 0.25
+fog_height = 30.0
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.002
+volumetric_fog_albedo = Color(0.7, 0.78, 0.72, 1)
+volumetric_fog_anisotropy = 0.72
+volumetric_fog_length = 110.0
+volumetric_fog_detail_spread = 2.2
+volumetric_fog_sky_affect = 0.0
+adjustment_enabled = true
+adjustment_contrast = 1.1
+adjustment_saturation = 1.15
