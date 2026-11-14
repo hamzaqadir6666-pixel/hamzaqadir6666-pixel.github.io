@@ -108,6 +108,24 @@ func open_spot(index := 1) -> Vector2:
 	return c
 
 
+## Memory in use, for spotting leaks during a soak.
+func _mem_line(sec: int) -> void:
+	var rss := 0
+	var f := FileAccess.open("/proc/self/status", FileAccess.READ)
+	if f != null:
+		for line in f.get_as_text().split("\n"):
+			if line.begins_with("VmRSS"):
+				rss = int(line.split(":")[1].strip_edges().split(" ")[0]) / 1024
+	mem_samples.append(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0)
+	print("  [mem] t=%4d s  static %.0f MB  rss %d MB  objects %d  nodes %d  orphans %d  resources %d" % [sec,
+		Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, rss,
+		int(Performance.get_monitor(Performance.OBJECT_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))])
+
+
+var mem_samples: Array = []
+
+
 ## Unscripted play: a naive bot wanders for several in-game minutes (set WS_SOAK=<minutes>).
 func soak(minutes: float) -> void:
 	print("\n-- soak (%.0f min of unscripted play)" % minutes)
@@ -138,6 +156,8 @@ func soak(minutes: float) -> void:
 			elif rng.randf() < 0.2:
 				Input.action_release("move_forward")
 				Input.action_press("interact")
+		if sec % 30 == 0:
+			_mem_line(sec)
 		await wait(1.0)
 		if GameState.threat == GameState.Threat.HUNTED:
 			hunted_time += 1.0
@@ -1611,6 +1631,13 @@ func test_expansion() -> void:
 	check(not bool(Settings.get_value("graphics", "animal_shadows")) and not bool(Settings.get_value("graphics", "ssao"))
 		and float(Settings.get_value("graphics", "render_scale")) < 0.7, "Low preset: no animal shadows, no SSAO, reduced render scale")
 	check(world.weather._max_drops <= 500, "Low preset: fewer rain particles", world.weather._max_drops)
+	await wait(0.2)
+	check(not world.day_night.sun.shadow_enabled and not world.day_night.moon.shadow_enabled and not world.day_night.env.glow_enabled
+		and is_equal_approx(float(Settings.get_value("graphics", "render_scale")), 0.5), "Low preset: no sun or moon shadows, no glow, half render scale")
+	Settings.set_value("graphics", "preset", 2, false)
+	await wait(0.2)
+	check((world.day_night.sun.shadow_enabled or world.day_night.moon.shadow_enabled) and world.day_night.env.glow_enabled, "High preset turns shadows and glow back on")
+	check(int(Settings.get_value("graphics", "fps_limit")) == 1, "frame rate is limited to 60 by default")
 	Settings.set_value("graphics", "preset", preset0, false)
 	check(Settings.guess_preset() >= 0 and Settings.guess_preset() <= 2, "hardware guess picks a preset", Settings.guess_preset())
 

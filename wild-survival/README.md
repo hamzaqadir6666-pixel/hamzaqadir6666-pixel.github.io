@@ -174,7 +174,7 @@ wild-survival/
 ## Automated tests
 
 `scenes/tests/test_runner.tscn` runs the real game headless and drives it with simulated input
-(365 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
+(368 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
 behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart,
 levels, random spawn, rare plants and abilities, night vision, weather, birds, new hunters, window settings):
 
@@ -190,7 +190,7 @@ This project was developed in a sandbox with no GPU or display. Godot 4.7.2 was 
 there and used headless, so:
 
 - **Verified**: every asset imports; all scripts compile; all shaders compile; the test suite above
-  passes (365/365); 8-minute unscripted soak runs of campaign level 3 produced no script errors.
+  passes (368/368); 8-minute unscripted soak runs of campaign level 3 produced no script errors.
 - **Not verified on a device**: the Android export and the touch controls on a real touchscreen
   (they are tested with simulated touch events only).
 - **Not verified**: anything that needs eyes or ears. The game has never been rendered to a screen,
@@ -218,3 +218,11 @@ A minimap sits in the top right corner; press **M** for the full map. Rare plant
 until the deer has come within 22 m of one (or eaten it). Safe thickets and landmarks appear once
 discovered. Rare plants grow in the same places every game, apart from five extra ones near the
 random start point. `full-map.png` is a test map showing every fixed plant.
+
+## Low-end PCs
+
+The **Low** preset renders at half resolution with no sun, moon or animal shadows, no glow, no
+anti-aliasing pass, no fog volumes and thin grass. The frame rate is limited to 60 by default
+(Settings > Graphics > Frame rate limit; 30 keeps a weak laptop cooler). PCs with integrated
+graphics start on Low the first time the game runs. `WS_SOAK=<minutes>` prints memory use every
+30 seconds.

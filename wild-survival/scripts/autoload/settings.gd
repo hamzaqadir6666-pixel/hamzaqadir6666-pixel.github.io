@@ -26,6 +26,9 @@ const DEFAULTS := {
 		"window_mode": 0, # 0 window, 1 maximised window, 2 fullscreen
 		"auto_quality": true,
 		"animal_shadows": true,
+		"light_shadows": true, # sun and moon shadows; off on Low
+		"glow": true,
+		"fps_limit": 1, # 0 = 30, 1 = 60, 2 = no limit
 		"vsync": true,
 		"render_scale": 1.0,
 		"shadows": 2,
@@ -41,10 +44,10 @@ const DEFAULTS := {
 }
 
 const PRESETS := [
-	{"render_scale": 0.65, "shadows": 0, "volumetric_fog": false, "ssao": false, "vegetation_distance": 0.55, "grass_density": 0.3, "animal_shadows": false},
-	{"render_scale": 0.8, "shadows": 1, "volumetric_fog": false, "ssao": false, "vegetation_distance": 0.8, "grass_density": 0.65, "animal_shadows": true},
-	{"render_scale": 1.0, "shadows": 2, "volumetric_fog": true, "ssao": true, "vegetation_distance": 1.0, "grass_density": 1.0, "animal_shadows": true},
-	{"render_scale": 1.0, "shadows": 3, "volumetric_fog": true, "ssao": true, "vegetation_distance": 1.4, "grass_density": 1.4, "animal_shadows": true},
+	{"render_scale": 0.5, "shadows": 0, "volumetric_fog": false, "ssao": false, "vegetation_distance": 0.5, "grass_density": 0.2, "animal_shadows": false, "light_shadows": false, "glow": false},
+	{"render_scale": 0.8, "shadows": 1, "volumetric_fog": false, "ssao": false, "vegetation_distance": 0.8, "grass_density": 0.65, "animal_shadows": true, "light_shadows": true, "glow": true},
+	{"render_scale": 1.0, "shadows": 2, "volumetric_fog": true, "ssao": true, "vegetation_distance": 1.0, "grass_density": 1.0, "animal_shadows": true, "light_shadows": true, "glow": true},
+	{"render_scale": 1.0, "shadows": 3, "volumetric_fog": true, "ssao": true, "vegetation_distance": 1.4, "grass_density": 1.4, "animal_shadows": true, "light_shadows": true, "glow": true},
 ]
 
 var data: Dictionary = {}
@@ -81,7 +84,7 @@ func guess_preset() -> int:
 	var cores := OS.get_processor_count()
 	for weak: String in ["intel", "uhd", "hd graphics", "iris", "vega", "radeon(tm) graphics", "radeon graphics", "llvmpipe", "swiftshader", "mali", "adreno", "microsoft basic"]:
 		if gpu.contains(weak):
-			return 0 if cores <= 4 else 1
+			return 0
 	if cores <= 2:
 		return 0
 	if cores <= 4:
@@ -219,11 +222,16 @@ func _apply_graphics() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if g["vsync"] else DisplayServer.VSYNC_DISABLED)
 	var vp := get_viewport()
 	vp.scaling_3d_scale = clampf(float(g["render_scale"]), 0.5, 1.0)
-	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if vp.scaling_3d_scale < 0.99 else Viewport.SCALING_3D_MODE_BILINEAR
+	# Low: plain bilinear upscale and no anti-aliasing pass at all, the cheapest path there is
+	var low := int(g["preset"]) == 0
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if vp.scaling_3d_scale < 0.99 and not low else Viewport.SCALING_3D_MODE_BILINEAR
 	vp.msaa_3d = Viewport.MSAA_2X if int(g["preset"]) >= 2 else Viewport.MSAA_DISABLED
-	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED if low else Viewport.SCREEN_SPACE_AA_FXAA
+	# a frame limit keeps a weak laptop from running flat out and overheating
+	Engine.max_fps = [30, 60, 0][clampi(int(g.get("fps_limit", 1)), 0, 2)]
 	var shadow_sizes := [1024, 2048, 4096, 8192]
-	RenderingServer.directional_shadow_atlas_set_size(shadow_sizes[clampi(int(g["shadows"]), 0, 3)], true)
+	var atlas: int = shadow_sizes[clampi(int(g["shadows"]), 0, 3)] if bool(g.get("light_shadows", true)) else 256
+	RenderingServer.directional_shadow_atlas_set_size(atlas, true)
 	RenderingServer.directional_soft_shadow_filter_set_quality(
 		[RenderingServer.SHADOW_QUALITY_SOFT_VERY_LOW, RenderingServer.SHADOW_QUALITY_SOFT_LOW,
 		RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM, RenderingServer.SHADOW_QUALITY_SOFT_HIGH][clampi(int(g["shadows"]), 0, 3)])

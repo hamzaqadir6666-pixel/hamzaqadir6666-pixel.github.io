@@ -156,9 +156,16 @@ func _on_settings_changed(section: String, _key: String) -> void:
 		_apply_quality()
 
 
+var _shadows_on := true
+
+
 func _apply_quality() -> void:
 	env.volumetric_fog_enabled = bool(Settings.get_value("graphics", "volumetric_fog"))
 	env.ssao_enabled = bool(Settings.get_value("graphics", "ssao"))
+	env.glow_enabled = bool(Settings.get_value("graphics", "glow"))
+	_shadows_on = bool(Settings.get_value("graphics", "light_shadows"))
+	sun.shadow_enabled = sun.shadow_enabled and _shadows_on
+	moon.shadow_enabled = moon.shadow_enabled and _shadows_on
 	var q := int(Settings.get_value("graphics", "shadows"))
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if q == 0 else DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	sun.directional_shadow_max_distance = [90.0, 130.0, 170.0, 220.0][clampi(q, 0, 3)]
@@ -228,8 +235,8 @@ func _update_lighting() -> void:
 	if moon.visible:
 		moon.look_at_from_position(Vector3.ZERO, -to_moon, Vector3.UP)
 		moon.light_energy = moon_energy
-	sun.shadow_enabled = sun_energy >= moon_energy
-	moon.shadow_enabled = not sun.shadow_enabled
+	sun.shadow_enabled = _shadows_on and sun_energy >= moon_energy
+	moon.shadow_enabled = _shadows_on and sun_energy < moon_energy
 
 	# sky / fog / exposure
 	sky_material.set_shader_parameter("day_factor", day_factor)
