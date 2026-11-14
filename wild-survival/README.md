@@ -174,7 +174,7 @@ wild-survival/
 ## Automated tests
 
 `scenes/tests/test_runner.tscn` runs the real game headless and drives it with simulated input
-(368 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
+(374 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
 behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart,
 levels, random spawn, rare plants and abilities, night vision, weather, birds, new hunters, window settings):
 
@@ -190,7 +190,7 @@ This project was developed in a sandbox with no GPU or display. Godot 4.7.2 was 
 there and used headless, so:
 
 - **Verified**: every asset imports; all scripts compile; all shaders compile; the test suite above
-  passes (368/368); 8-minute unscripted soak runs of campaign level 3 produced no script errors.
+  passes (374/374); 8-minute unscripted soak runs of campaign level 3 produced no script errors.
 - **Not verified on a device**: the Android export and the touch controls on a real touchscreen
   (they are tested with simulated touch events only).
 - **Not verified**: anything that needs eyes or ears. The game has never been rendered to a screen,
@@ -226,3 +226,10 @@ anti-aliasing pass, no fog volumes and thin grass. The frame rate is limited to 
 (Settings > Graphics > Frame rate limit; 30 keeps a weak laptop cooler). PCs with integrated
 graphics start on Low the first time the game runs. `WS_SOAK=<minutes>` prints memory use every
 30 seconds.
+
+## Water and phones
+
+The water surface is built only over the river, the lakes and their banks (about 6 % of the map)
+instead of one sheet under the whole map. On Android / iOS and with the OpenGL (Compatibility)
+renderer the game uses a lite terrain (heights stored in the mesh, seven textures, no normal
+maps) and a lite water shader that never reads the screen or depth buffer.

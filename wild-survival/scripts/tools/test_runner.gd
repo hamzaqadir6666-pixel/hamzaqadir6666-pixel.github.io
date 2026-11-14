@@ -350,6 +350,33 @@ func test_load() -> void:
 			wet += 1
 	check(hmin < -1.5 and hmax > 40.0, "terrain has water beds and mountains", "min %.1f max %.1f" % [hmin, hmax])
 	check(wet > 3000, "rivers and lakes exist", "%d wet cells (%.1f%%)" % [wet, wet * 100.0 / d.height.size()])
+	# water is drawn only over the river and lakes, not under the whole map
+	var t := world.terrain
+	var water_area := t.water_quads * Terrain.WATER_STEP * Terrain.WATER_STEP
+	check(t.water_quads > 500 and water_area < 0.15 * WorldData.SIZE * WorldData.SIZE, "water surface covers only the river and lakes",
+		"%d quads, %.1f%% of the map" % [t.water_quads, water_area * 100.0 / (WorldData.SIZE * WorldData.SIZE)])
+	check(t.has_water_surface(-285.0, -170.0) and t.has_water_surface(265.0, 235.0) and t.has_water_surface(300.0, -290.0), "all three lakes have a water surface")
+	check(not t.has_water_surface(330.0, 60.0) and not t.has_water_surface(-150.0, 120.0) and not t.has_water_surface(-380.0, 20.0), "no water surface under dry clearings")
+	var uncovered := 0
+	for iz in range(0, WorldData.N, 3):
+		for ix in range(0, WorldData.N, 3):
+			if d.height[iz * WorldData.N + ix] < WorldData.WATER_LEVEL and not t.has_water_surface(-WorldData.HALF + ix * WorldData.CELL, -WorldData.HALF + iz * WorldData.CELL):
+				uncovered += 1
+	check(uncovered == 0, "every spot below the water level is covered by water", uncovered)
+	# phones: terrain with the heights baked into the mesh and the light shaders
+	Settings.force_lite = true
+	var lt := Terrain.new()
+	lt.build(d)
+	Settings.force_lite = false
+	var chunk: MeshInstance3D = lt.get_node("Chunks").get_child(lt.get_node("Chunks").get_child_count() / 2)
+	var cv: PackedVector3Array = chunk.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var worst := 0.0
+	for v in cv:
+		worst = maxf(worst, absf(v.y - d.height_at(clampf(chunk.position.x + v.x, -512.0, 512.0), clampf(chunk.position.z + v.z, -512.0, 512.0))))
+	check(lt.lite and worst < 0.001 and lt.material.shader.resource_path.ends_with("terrain_lite.gdshader")
+		and lt.water_material.shader.resource_path.ends_with("water_lite.gdshader"), "phone terrain has real heights in the mesh and the lite shaders", worst)
+	check(lt.water_quads == t.water_quads and not world.terrain.lite, "phone build has the same water; PC keeps the full shaders")
+	lt.free()
 	print("  [info] vegetation counts: ", world.vegetation.counts)
 	var trees := int(world.vegetation.counts.get("trees", 0)) + int(world.vegetation.counts.get("palms", 0)) + int(world.vegetation.counts.get("dead", 0))
 	check(trees > 800, "hundreds of trees placed", trees)
@@ -1447,7 +1474,7 @@ func test_day_night() -> void:
 	await wait(1.0)
 	dn.set_time(0.5)
 	await wait(0.3)
-	check(dn.phase == &"night" and not dn.sun.visible and dn.moon.visible and dn.moon.shadow_enabled, "midnight: moonlight only",
+	check(dn.phase == &"night" and not dn.sun.visible and dn.moon.visible and dn.moon.shadow_enabled == bool(Settings.get_value("graphics", "light_shadows")), "midnight: moonlight only",
 		"moon %.2f night %.2f" % [dn.moon.light_energy, dn.night_factor])
 	check(dn.env.fog_light_color.v < fog_day.v * 0.2 and dn.env.ambient_light_energy < 0.7, "night is dark")
 	check(world.predators.predators.size() == before + 3, "an extra hyena pack arrives at night", world.predators.predators.size())

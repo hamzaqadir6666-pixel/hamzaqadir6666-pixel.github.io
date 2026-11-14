@@ -133,6 +133,15 @@ func toggle_fullscreen() -> void:
 	set_value("graphics", "window_mode", 0 if int(get_value("graphics", "window_mode")) == 2 else 2)
 
 
+## Phones, tablets and the OpenGL (Compatibility) renderer use the lite terrain and water: old
+## mobile GPUs cannot run the full terrain shader (too many textures, float height map).
+var force_lite := false
+
+
+func lite_world() -> bool:
+	return force_lite or is_mobile() or RenderingServer.get_current_rendering_method() == "gl_compatibility"
+
+
 func is_mobile() -> bool:
 	return OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios")
 
