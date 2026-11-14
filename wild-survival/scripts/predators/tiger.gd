@@ -218,12 +218,12 @@ func _think_return(_dt: float) -> void:
 
 
 func _animate(delta: float) -> void:
-	super._animate(delta)
 	# crouch low while stalking or lying in ambush
 	var crouch := 0.0
 	if state == State.STALK or (state == State.PATROL and _tactic == Tactic.AMBUSH):
 		crouch = -0.22
-	rig.position.y = lerpf(rig.position.y, crouch, minf(delta * 4.0, 1.0))
+	rig.lift = lerpf(rig.lift, crouch, minf(delta * 4.0, 1.0))
+	super._animate(delta)
 
 
 func _ambient_voice() -> void:

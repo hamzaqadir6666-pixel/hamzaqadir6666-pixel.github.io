@@ -26,6 +26,7 @@ var groves: Array[Dictionary] = []      ## safe thickets {id, name, center: Vect
 var pois: Array[Dictionary] = []        ## {id, type, name, pos: Vector2, radius}
 var trails: Array[PackedVector2Array] = []
 var spawn_point := Vector2(70.0, 40.0)
+var run_spawn := Vector2(70.0, 40.0)    ## where the deer started the current run (random each game)
 
 var _cover_cells: Dictionary = {}       ## Vector2i -> Array of Vector4(x, z, radius, strength)
 const COVER_CELL := 8.0
@@ -429,6 +430,26 @@ func random_land_point(rng: RandomNumberGenerator, center: Vector2, radius: floa
 		if is_walkable(p.x, p.y) and not in_safe_zone(p, 4.0):
 			return p
 	return center
+
+
+## A good place for the deer to start a run: dry, level, open ground away from deep water.
+func random_spawn(rng: RandomNumberGenerator) -> Vector2:
+	for attempt in 200:
+		var p := Vector2(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)) * PLAY_LIMIT * 0.78
+		if not is_walkable(p.x, p.y) or in_safe_zone(p, 6.0):
+			continue
+		if height_at(p.x, p.y) < WATER_LEVEL + 0.6 or slope_at(p.x, p.y) > 0.22 or water_distance(p.x, p.y) < 6.0:
+			continue
+		# room to move in every direction
+		var ok := true
+		for a in 8:
+			var q := p + Vector2(cos(a * TAU / 8.0), sin(a * TAU / 8.0)) * 9.0
+			if not is_walkable(q.x, q.y) or slope_at(q.x, q.y) > 0.4:
+				ok = false
+				break
+		if ok:
+			return p
+	return spawn_point
 
 
 # ------------------------------------------------------------------ cover / safe zones

@@ -29,7 +29,7 @@ var _tap_release: Array[String] = []    # actions pressed for a single frame
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 	_font = ThemeDB.fallback_font

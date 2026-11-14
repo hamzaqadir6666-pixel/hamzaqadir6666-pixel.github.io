@@ -14,14 +14,14 @@ var _syncing := false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	theme = UITheme.get_theme()
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	UITheme.fill(self)
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.55)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
+	UITheme.fill(dim)
 	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
+	UITheme.fill(center)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(820, 640)
 	center.add_child(panel)
@@ -32,8 +32,8 @@ func _ready() -> void:
 	var tabs := TabContainer.new()
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(tabs)
-	tabs.add_child(_graphics_tab())
-	tabs.add_child(_audio_tab())
+	tabs.add_child(_scrolled(_graphics_tab()))
+	tabs.add_child(_scrolled(_audio_tab()))
 	tabs.add_child(_controls_tab())
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_END
@@ -47,6 +47,17 @@ func close() -> void:
 	Settings.save()
 	hide()
 	closed.emit()
+
+
+## Tabs scroll rather than push the panel off a small screen.
+func _scrolled(g: GridContainer) -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = g.name
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	g.name = "Grid"
+	g.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(g)
+	return scroll
 
 
 func _grid(tab_name: String) -> GridContainer:
@@ -122,12 +133,17 @@ func _option(section: String, key: String, items: Array) -> Control:
 func _graphics_tab() -> Control:
 	var g := _grid("Graphics")
 	_row(g, "Quality preset", _option("graphics", "preset", ["Low", "Medium", "High", "Ultra"]))
-	_row(g, "Fullscreen", _check("graphics", "fullscreen"))
+	_row(g, "Window  (F11 toggles)", _option("graphics", "window_mode", ["Window (resizable)", "Maximised window", "Fullscreen"]))
+	_row(g, "Auto performance (lower quality if slow)", _check("graphics", "auto_quality"))
 	_row(g, "V-Sync", _check("graphics", "vsync"))
+	_row(g, "Frame rate limit", _option("graphics", "fps_limit", ["30", "60", "No limit"]))
 	_row(g, "Render scale", _slider("graphics", "render_scale", 0.5, 1.0, 0.05, "%"))
 	_row(g, "Shadow quality", _option("graphics", "shadows", ["Low", "Medium", "High", "Ultra"]))
 	_row(g, "Volumetric fog & sun shafts", _check("graphics", "volumetric_fog"))
 	_row(g, "Ambient occlusion", _check("graphics", "ssao"))
+	_row(g, "Sun and moon shadows", _check("graphics", "light_shadows"))
+	_row(g, "Animal shadows", _check("graphics", "animal_shadows"))
+	_row(g, "Glow", _check("graphics", "glow"))
 	_row(g, "Vegetation distance", _slider("graphics", "vegetation_distance", 0.5, 1.5, 0.05, "%"))
 	_row(g, "Grass density", _slider("graphics", "grass_density", 0.2, 1.6, 0.1, "%"))
 	_row(g, "Field of view", _slider("graphics", "fov", 55.0, 95.0, 1.0, " deg"))

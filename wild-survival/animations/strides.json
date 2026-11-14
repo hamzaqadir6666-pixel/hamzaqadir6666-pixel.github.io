@@ -1,0 +1,46 @@
+{
+  "res://models/animals/boar.glb": {
+    "Walk": 5.363
+  },
+  "res://models/animals/cheetah.glb": {
+    "Run": 1.891,
+    "Walk": 0.237
+  },
+  "res://models/animals/chicken.glb": {
+    "Walk": 3.449
+  },
+  "res://models/animals/crocodile.glb": {
+    "Walk": 2.054
+  },
+  "res://models/animals/deer.glb": {
+    "Run": 0.985,
+    "Walk": 0.755
+  },
+  "res://models/animals/fox.glb": {
+    "Walk": 2.504
+  },
+  "res://models/animals/gazelle.glb": {
+    "Walk": 1.639
+  },
+  "res://models/animals/goat.glb": {
+    "Walk": 1.186
+  },
+  "res://models/animals/hyena.glb": {
+    "Run": 9.44,
+    "Walk": 2.215
+  },
+  "res://models/animals/lion.glb": {
+    "Run": 2.335,
+    "Walk": 0.293
+  },
+  "res://models/animals/tiger.glb": {
+    "Run": 1.485,
+    "Walk": 0.766
+  },
+  "res://models/animals/wolf.glb": {
+    "Walk": 1.148
+  },
+  "res://models/animals/zebu.glb": {
+    "Walk": 2.143
+  }
+}

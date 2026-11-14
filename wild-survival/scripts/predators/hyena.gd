@@ -21,7 +21,7 @@ func _configure() -> void:
 	model_path = "res://models/animals/hyena.glb"
 	model_scale = 0.21
 	clip_aliases = {"Run": "Gallop"}
-	walk_speed = 1.9
+	walk_speed = 1.4
 	trot_speed = 4.8
 	run_speed = 9.9
 	acceleration = 10.0

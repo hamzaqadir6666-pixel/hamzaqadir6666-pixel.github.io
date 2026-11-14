@@ -13,6 +13,8 @@ Used and **modified** for this project (the modified files are likewise released
 - `models/animals/deer.glb`, `lion.glb`, `tiger.glb`, `cheetah.glb` — meshes, skeletons, textures and
   animation clips converted from COLLADA to glTF, rescaled, subdivided, clips merged into one file.
   The lion and cheetah "Attack" clip and the deer "Jump" clip were derived from existing clips.
+  The lion and cheetah skeletons were re-exported without mirrored (negative-scale) bones, which
+  Godot poses incorrectly.
 - `models/environment/**` — trees, palms, bushes, plants, grass, water plants, rocks, cliffs and logs,
   converted from 0 A.D. actors to static glTF.
 - `textures/terrain/*`, `textures/water/*`, `textures/particles/*` — resized / converted.
@@ -20,6 +22,10 @@ Used and **modified** for this project (the modified files are likewise released
   game over (*Dried Tears*).
 - `audio/ambience/*` except the two files listed under "Original" below.
 - `audio/animals/lion_*` — original recordings.
+- `models/animals/gazelle.glb`, `boar.glb`, `goat.glb`, `zebu.glb` (the buffalo), `fox.glb`,
+  `chicken.glb` (the junglefowl), `wolf.glb`, `crocodile.glb`, `hawk.glb`, `crow.glb` — 0 A.D. fauna
+  (mesh, skeleton, texture, Idle and Walk / flight clips), © Wildfire Games, CC BY-SA 3.0. glTF conversion taken from
+  https://github.com/Vitexus/ishtaria-client (`assets/zeroad/fauna/`), buffers repacked for Godot.
 - `audio/animals/tiger_*`, `cheetah_attack*`, `cheetah_growl`, `hyena_attack*`, `hyena_growl` —
   **derived** from the 0 A.D. lion recordings by pitch shifting and filtering. They are stand-ins, not
   recordings of those species.
@@ -48,3 +54,9 @@ Code, shaders, UI, sky and the bird-flock silhouettes are original.
 ## Engine
 
 Godot Engine — MIT — <https://godotengine.org>
+
+## Generated in code
+
+- Rain loop (`scripts/world/weather.gd::make_rain_stream`) — filtered noise synthesised at start-up.
+- HUD icons (`scripts/ui/hud_icon.gd`) and the rare plants (`scripts/world/forage.gd`) are drawn / built
+  from primitives in code; no external assets.

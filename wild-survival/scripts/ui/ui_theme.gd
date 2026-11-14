@@ -80,6 +80,13 @@ static func build_theme() -> Theme:
 	return t
 
 
+## Make a control cover its parent. Anchors AND offsets are set together: `set_anchors_preset()`
+## alone keeps the control's current rectangle when it is already in the tree, which leaves it
+## zero-sized in a corner.
+static func fill(c: Control) -> void:
+	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+
 static func label(text: String, size := 20, color := TEXT) -> Label:
 	var l := Label.new()
 	l.text = text

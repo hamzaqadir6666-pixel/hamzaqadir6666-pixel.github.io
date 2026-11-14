@@ -11,6 +11,10 @@ lions, tigers, cheetahs and hyenas hunt you through a full day / night cycle.
    The first open imports all models, textures and audio (about a minute or two).
 3. Press **F5** (Run Project). The main scene is `res://scenes/main.tscn`.
 
+The game opens in a normal **resizable window** (title bar, minimise / maximise / close, drag to move,
+drag the edges to resize). **F11** or **Alt+Enter** switches to fullscreen and back, and
+Settings > Graphics > *Window* offers Window / Maximised window / Fullscreen.
+
 World generation takes a few seconds at start-up (loading bar), after which the main menu appears
 over the live jungle.
 
@@ -86,6 +90,40 @@ physics line-of-sight checks against terrain, trunks and rocks, hearing based on
 make, and an awareness meter that has to fill before they commit. After losing you they search around
 your last known position and then return to their patrol.
 
+### The other prey
+
+Herds of **gazelle** graze around the clearings and **boar** root about in the forest. They bolt
+from predators (and from a deer that blunders into them), and an idle lion, tiger, cheetah or hyena
+that spots one will hunt it. A predator that makes a kill stays to feed for a while and is far less
+watchful - a good moment to slip past. A herd suddenly running is a warning that something is near.
+Killed animals are replaced elsewhere in the jungle after a while.
+
+## Campaign, rare plants and weather
+
+- **Levels.** *Play* runs an eight-level campaign. Each level asks you to survive a set time and to
+  eat a number of rare plants; later levels bring more, faster and harder-hitting hunters, dusk and
+  night starts, drought and storms. Levels 7 (*Blood Moon*) and 8 (*Apex*) are meant to be extremely
+  hard. *Choose Level* replays any level reached; *Endless Survival* is the original open-ended run.
+  The table is `GameState.LEVELS`.
+- **Random start.** The deer begins every game somewhere different (dry, open, level ground with no
+  hunter nearby).
+- **Slow start, speed from food.** A new deer runs at 80 % speed. Every *Swift Clover* adds 3.5 %
+  for good, up to about 125 %.
+- **Rare glowing plants** (scattered afresh each game, many hidden in cover; walk up and press E):
+  Swift Clover (speed), Moonpetal (**night vision**), Ironbark Root (max health), Sunberry (max
+  stamina), Ghost Fern (silent steps), Owl-eye Mushroom (sense the nearest hunter), Spring Lily (higher
+  jump), Lotus Root (fast, tireless swimming), Healing Herb, Wild Honeycomb - and the poisonous Red
+  Toadstool. Gifts are kept from level to level and saved in `user://records.cfg`.
+- **Weather.** Clear, overcast, rain and storm come and go: rain streaks and splashes, a darker sky,
+  thicker air, a rain loop, thunder and lightning. Rain cuts every hunter's sight and hearing by up to
+  a third and slowly quenches thirst.
+- **More wildlife.** Wolves (tireless pack, from level 3) and crocodiles (ambush at the water's
+  edge) join lion, tiger, cheetah and hyena. Gazelle, boar, goats, buffalo, foxes and junglefowl
+  graze the map; hawks soar over the clearings and crows gather above a fresh kill. The HUD counts the
+  species you have actually seen (*Wildlife seen n / 14*).
+- **HUD.** Health, stamina, food and water are shown with heart, bolt, leaf and droplet icons; a row
+  of ability icons lights up as gifts are found; the level goal, weather and clock sit top-left.
+
 ## Project layout
 
 ```
@@ -95,6 +133,7 @@ wild-survival/
   scripts/
     autoload/     settings.gd, game_state.gd, audio_manager.gd
     player/       player.gd, third_person_camera.gd, animal_rig.gd, player_effects.gd
+    prey/         prey.gd (gazelle, boar: graze, wander, flee, die), prey_manager.gd (herds)
     predators/    predator.gd (shared brain), lion.gd, tiger.gd, cheetah.gd, hyena.gd, predator_manager.gd
     world/        world.gd, world_data.gd, terrain.gd, vegetation.gd, grass_streamer.gd,
                   flora_library.gd, day_night.gd, ambience.gd, world_effects.gd
@@ -125,12 +164,19 @@ wild-survival/
   without physics or animation.
 - One-shot sounds go through pooled 2D / 3D players.
 - Settings > Graphics has Low / Medium / High / Ultra presets plus individual toggles.
+- **Low-end PCs.** On first launch the preset is chosen from the graphics adapter and core count
+  (integrated graphics start on Low or Medium). *Low* renders 3D at 65 % resolution with FSR
+  upscaling, a 1024 px two-split shadow map, no SSAO, no volumetric fog, no animal shadows, 30 % grass,
+  55 % vegetation distance and a quarter of the rain particles. *Auto performance* (on by default)
+  watches the frame rate in game and, below about 27 fps, lowers render scale and then the preset.
+  The UI is always drawn at full resolution.
 
 ## Automated tests
 
 `scenes/tests/test_runner.tscn` runs the real game headless and drives it with simulated input
-(188 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
-behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart):
+(374 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
+behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart,
+levels, random spawn, rare plants and abilities, night vision, weather, birds, new hunters, window settings):
 
 ```
 godot --headless --import
@@ -144,7 +190,7 @@ This project was developed in a sandbox with no GPU or display. Godot 4.7.2 was 
 there and used headless, so:
 
 - **Verified**: every asset imports; all scripts compile; all shaders compile; the test suite above
-  passes (188/188); a 20-minute unscripted soak run produced no script errors.
+  passes (374/374); 8-minute unscripted soak runs of campaign level 3 produced no script errors.
 - **Not verified on a device**: the Android export and the touch controls on a real touchscreen
   (they are tested with simulated touch events only).
 - **Not verified**: anything that needs eyes or ears. The game has never been rendered to a screen,
@@ -156,3 +202,34 @@ there and used headless, so:
 
 Code: MIT. Assets: see `CREDITS.md` — most art and audio is CC BY-SA 3.0 (Wildfire Games, 0 A.D.), which
 requires attribution and that derived assets stay under the same license.
+
+### Notes on the expansion (levels, weather, new animals)
+
+- The new animals (wolf, crocodile, goat, buffalo, fox, junglefowl, hawk, crow) come from the same
+  0 A.D. set as the gazelle and boar and only have Idle and Walk (or flight) clips. Their run is the
+  walk cycle played faster, and wolf / crocodile attacks are a procedural lunge rather than a
+  dedicated attack animation. The lion, tiger, cheetah and hyena models are unchanged.
+- Rain, lightning, night vision brightness, the HUD icons and the window behaviour have been checked
+  by the headless tests only (values, state, layout) - never looked at on a screen.
+
+## Minimap
+
+A minimap sits in the top right corner; press **M** for the full map. Rare plants are not marked
+until the deer has come within 22 m of one (or eaten it). Safe thickets and landmarks appear once
+discovered. Rare plants grow in the same places every game, apart from five extra ones near the
+random start point. `full-map.png` is a test map showing every fixed plant.
+
+## Low-end PCs
+
+The **Low** preset renders at half resolution with no sun, moon or animal shadows, no glow, no
+anti-aliasing pass, no fog volumes and thin grass. The frame rate is limited to 60 by default
+(Settings > Graphics > Frame rate limit; 30 keeps a weak laptop cooler). PCs with integrated
+graphics start on Low the first time the game runs. `WS_SOAK=<minutes>` prints memory use every
+30 seconds.
+
+## Water and phones
+
+The water surface is built only over the river, the lakes and their banks (about 6 % of the map)
+instead of one sheet under the whole map. On Android / iOS and with the OpenGL (Compatibility)
+renderer the game uses a lite terrain (heights stored in the mesh, seven textures, no normal
+maps) and a lite water shader that never reads the screen or depth buffer.

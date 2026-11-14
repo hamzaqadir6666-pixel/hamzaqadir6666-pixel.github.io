@@ -24,6 +24,11 @@ AudioManager="*res://scripts/autoload/audio_manager.gd"
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
+window/size/mode=0
+window/size/resizable=true
+window/size/borderless=false
+window/size/window_width_override=1280
+window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
@@ -44,7 +49,7 @@ common/physics_interpolation=true
 
 textures/vram_compression/import_etc2_astc=true
 renderer/rendering_method.mobile="mobile"
-lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/directional_shadow/size=2048
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
 lights_and_shadows/positional_shadow/soft_shadow_filter_quality=2
 anti_aliasing/quality/msaa_3d=1

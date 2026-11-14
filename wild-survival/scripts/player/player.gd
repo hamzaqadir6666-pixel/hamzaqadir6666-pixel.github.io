@@ -28,6 +28,13 @@ var hunger := 100.0      ## fullness: 100 = fed, 0 = starving
 var thirst := 100.0      ## hydration: 100 = quenched, 0 = parched
 var stamina_regen_bonus := 1.0
 var exhausted := false
+var speed_mult := 1.0          ## grows with every Swift Clover eaten (see GameState)
+var noise_mult := 1.0          ## Silent Step
+var jump_mult := 1.0           ## High Leap
+var swim_mult := 1.0           ## Otter Blood
+var drain_mult := 1.0          ## level difficulty: how fast hunger and thirst fall
+var poisoned := 0.0            ## seconds of poison left
+var forage: Node = null        ## Forage: the rare plants scattered through the jungle
 
 # --- stealth outputs (read by predators and the HUD)
 var visibility := 1.0
@@ -69,6 +76,7 @@ var _rng := RandomNumberGenerator.new()
 var _starve_warned := false
 var _thirst_warned := false
 var _effects: PlayerEffects
+var _special_cd := 0.0
 
 
 func _ready() -> void:
@@ -182,13 +190,15 @@ func _move(delta: float, input: Vector2, want_sprint: bool, want_sneak: bool, wa
 		if mode != Mode.NORMAL:
 			_set_mode(Mode.NORMAL)
 		if swimming:
-			target = SWIM_SPEED
+			target = SWIM_SPEED * swim_mult
 		elif is_sprinting:
-			target = SPRINT_SPEED
+			target = SPRINT_SPEED * speed_mult
 		elif is_sneaking:
 			target = SNEAK_SPEED
 		else:
-			target = TROT_SPEED
+			target = TROT_SPEED * speed_mult
+		if poisoned > 0.0:
+			target *= 0.7
 		if exhausted and not is_sneaking and not swimming:
 			target = minf(target, TIRED_SPEED)
 		if in_water and not swimming:
@@ -226,7 +236,7 @@ func _move(delta: float, input: Vector2, want_sprint: bool, want_sneak: bool, wa
 		_air_time = 0.0
 		velocity.y = -1.0
 		if want_jump and stamina >= 6.0 and mode == Mode.NORMAL:
-			velocity.y = JUMP_VELOCITY
+			velocity.y = JUMP_VELOCITY * jump_mult
 			stamina -= 6.0
 			_sprint_rest = 0.6
 			floor_snap_length = 0.0
@@ -269,13 +279,22 @@ func _interact(delta: float, want: bool, moving: bool) -> void:
 	var drink_ok := can_drink()
 	var graze_ok := is_on_floor() and world.surface_at(global_position.x, global_position.z) == &"grass"
 	var key := "EAT" if Settings.touch_active() else Settings.binding_text("interact")
-	if drink_ok and thirst < 99.0:
+	var special: Dictionary = forage.nearest(global_position, 2.6) if forage != null else {}
+	if not special.is_empty():
+		hint = "Press [%s] to eat %s" % [key, special["name"]]
+		if want and is_on_floor() and _speed < 3.0 and _special_cd <= 0.0:
+			_special_cd = 0.6
+			forage.eat(special, self)
+			AudioManager.play_at("res://audio/deer/eat.ogg", global_position, -5.0, 1.1, 4.0, 30.0)
+			hint = ""
+	elif drink_ok and thirst < 99.0:
 		hint = "Hold [%s] to drink" % key
 	elif not _food_site.is_empty() and hunger < 99.0:
 		hint = "Hold [%s] to eat %s" % [key, _food_site["name"]]
 	elif graze_ok and hunger < 80.0:
 		hint = "Hold [%s] to graze" % key
-	if want and not moving and is_on_floor() and _speed < 0.5:
+	_special_cd = maxf(_special_cd - delta, 0.0)
+	if want and not moving and is_on_floor() and _speed < 0.5 and special.is_empty():
 		if drink_ok and thirst < 99.5:
 			_set_mode(Mode.DRINKING)
 			thirst = minf(thirst + 15.0 * delta, 100.0)
@@ -325,14 +344,17 @@ func _update_stats(delta: float) -> void:
 		effort = 1.9
 	elif _speed > 3.0:
 		effort = 1.25
-	hunger = maxf(hunger - 0.175 * effort * delta, 0.0)
-	thirst = maxf(thirst - 0.235 * effort * delta, 0.0)
+	hunger = maxf(hunger - 0.175 * effort * drain_mult * delta, 0.0)
+	thirst = maxf(thirst - 0.235 * effort * drain_mult * delta, 0.0)
+	if poisoned > 0.0:
+		poisoned -= delta
+		health = maxf(health - 1.5 * delta, 1.0)
 
 	if is_sprinting:
 		stamina -= 8.5 * delta
 		_sprint_rest = 1.1
 	elif swimming:
-		stamina -= 3.0 * delta
+		stamina -= (0.0 if swim_mult > 1.0 else 3.0) * delta
 		_sprint_rest = 0.8
 	else:
 		_sprint_rest -= delta
@@ -443,6 +465,7 @@ func _update_stealth() -> void:
 	if in_grove:
 		v = 0.0
 		noise_radius *= 0.3
+	noise_radius *= noise_mult
 	visibility = clampf(v, 0.0, 1.0)
 
 
@@ -577,6 +600,10 @@ func reset_at(pos: Vector3, facing: float) -> void:
 	thirst = 85.0
 	stamina_regen_bonus = 1.0
 	exhausted = false
+	poisoned = 0.0
+	apply_abilities()
+	health = max_health
+	stamina = max_stamina
 	mode = Mode.NORMAL
 	velocity = Vector3.ZERO
 	_speed = 0.0
@@ -591,3 +618,14 @@ func reset_at(pos: Vector3, facing: float) -> void:
 	_thirst_warned = false
 	rig.play("Idle", 1.0, 0.0, true)
 	reset_physics_interpolation()
+
+
+## Read the permanent gifts (GameState.abilities) into the deer's stats.
+func apply_abilities(reset_max := true) -> void:
+	speed_mult = GameState.speed_multiplier()
+	noise_mult = 0.55 if GameState.has_ability("silent_step") else 1.0
+	jump_mult = 1.3 if GameState.has_ability("high_leap") else 1.0
+	swim_mult = 1.7 if GameState.has_ability("otter_blood") else 1.0
+	if reset_max:
+		max_health = 100.0 + 10.0 * GameState.stacks("iron_hide")
+		max_stamina = 100.0 + 10.0 * GameState.stacks("deep_lungs")
