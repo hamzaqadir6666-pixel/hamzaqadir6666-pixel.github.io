@@ -29,16 +29,23 @@ func spawn_default_roster() -> void:
 		var c: Vector2 = world.clearings[i]["center"]
 		var ang := _rng.randf() * TAU
 		spawn_herd("gazelle", c + Vector2(cos(ang), sin(ang)) * _rng.randf_range(18.0, 34.0), 3)
+	for i in range(6, n):
+		var c2: Vector2 = world.clearings[i]["center"]
+		spawn_herd("gazelle", c2 + Vector2(_rng.randf_range(-20.0, 20.0), _rng.randf_range(-20.0, 20.0)), 3)
+	# one herd grazes within sight of where the deer starts, so the jungle feels alive at once
+	var ang0 := _rng.randf() * TAU
+	spawn_herd("gazelle", world.spawn_point + Vector2(cos(ang0), sin(ang0)) * 38.0, 4, 10.0)
+	spawn_herd("boar", world.spawn_point - Vector2(cos(ang0), sin(ang0)) * 55.0, 2, 12.0)
 	# boar root about in the forest
 	for c: Vector2 in [Vector2(-150.0, 60.0), Vector2(90.0, -120.0), Vector2(170.0, 60.0), Vector2(-60.0, 190.0), Vector2(20.0, 40.0)]:
 		spawn_herd("boar", c, 2)
 
 
-func spawn_herd(kind: String, where: Vector2, count: int) -> Array[Prey]:
+func spawn_herd(kind: String, where: Vector2, count: int, scatter := 30.0) -> Array[Prey]:
 	var out: Array[Prey] = []
 	var id := _next_herd
 	_next_herd += 1
-	var center := world.random_land_point(_rng, where, 30.0)
+	var center := world.random_land_point(_rng, where, scatter)
 	for i in count:
 		out.append(spawn(kind, world.random_land_point(_rng, center, 7.0), id))
 	return out

@@ -10,6 +10,9 @@ const SCENES := {
 	"hyena": "res://scenes/predators/hyena.tscn",
 }
 
+const SPAWN_CLEARANCE := 95.0
+const ROSTER_SIZE := 22
+
 var world: WorldData
 var player: Player
 var day_night: DayNight
@@ -33,25 +36,36 @@ func setup(p_world: WorldData, p_player: Player, p_day_night: DayNight) -> void:
 
 
 func spawn_default_roster() -> void:
-	# Lions hold the big western and southern clearings.
+	# Lions hold the big clearings.
 	spawn("lion", world.clearings[1]["center"])
 	spawn("lion", world.clearings[5]["center"])
 	spawn("lion", world.clearings[6]["center"] + Vector2(20.0, 10.0))
+	spawn("lion", world.clearings[7]["center"])
+	spawn("lion", world.clearings[0]["center"] + Vector2(35.0, -60.0))
 	# Tigers haunt the jungle near water and trails.
 	spawn("tiger", Vector2(-205.0, -150.0))
 	spawn("tiger", Vector2(215.0, 185.0))
 	spawn("tiger", Vector2(-30.0, -215.0))
+	spawn("tiger", Vector2(-70.0, 60.0))
+	spawn("tiger", Vector2(150.0, -30.0))
 	# Cheetahs work the open eastern clearings.
 	spawn("cheetah", world.clearings[2]["center"])
 	spawn("cheetah", world.clearings[4]["center"])
 	spawn("cheetah", world.clearings[3]["center"])
-	# Two roaming hyena packs.
-	spawn_pack(Vector2(-300.0, -60.0), 2)
-	spawn_pack(Vector2(120.0, 240.0), 2)
+	spawn("cheetah", world.clearings[8]["center"])
+	# Roaming hyena packs.
+	spawn_pack(Vector2(-300.0, -60.0), 3)
+	spawn_pack(Vector2(120.0, 240.0), 3)
+	spawn_pack(Vector2(240.0, -20.0), 2)
 
 
 func spawn(kind: String, where: Vector2, pack := 0) -> Predator:
 	var p2 := world.random_land_point(_rng, where, 14.0)
+	# never start a run with a hunter on top of the deer
+	var away := p2 - world.spawn_point
+	if away.length() < SPAWN_CLEARANCE:
+		var dir := away.normalized() if away.length() > 0.5 else Vector2.RIGHT
+		p2 = world.random_land_point(_rng, world.spawn_point + dir * (SPAWN_CLEARANCE + 20.0), 12.0)
 	var scene: PackedScene = load(SCENES[kind])
 	var pred: Predator = scene.instantiate()
 	pred.world = world

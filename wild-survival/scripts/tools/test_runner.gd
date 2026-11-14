@@ -630,6 +630,20 @@ func test_feet() -> void:
 	isolate()
 	var table := AnimalRig.stride_table()
 	check(table.size() >= 6, "stride table loaded", table.keys().size())
+	# Mirrored (negative-scale) bones are posed wrongly by the engine: legs fly up in the air. The
+	# models must not contain any, and nothing above a skeleton may be scaled a hundredfold.
+	for kind: String in ["lion", "cheetah", "tiger", "hyena"]:
+		var pr := _first(kind)
+		var sk: Skeleton3D = pr.rig.find_children("*", "Skeleton3D", true, false)[0]
+		var bad: PackedStringArray = []
+		for i in sk.get_bone_count():
+			var b := sk.get_bone_rest(i).basis
+			if b.determinant() < 0.0 or absf(b.get_scale().x - 1.0) > 0.01 or absf(b.get_scale().y - 1.0) > 0.01 or absf(b.get_scale().z - 1.0) > 0.01:
+				bad.append(sk.get_bone_name(i))
+		check(bad.is_empty(), "%s skeleton has no mirrored or scaled bones" % kind, bad)
+		var mi: MeshInstance3D = pr.rig.find_children("*", "MeshInstance3D", true, false)[0]
+		var size := mi.get_aabb().size * mi.global_transform.basis.get_scale().x
+		check(maxf(size.x, maxf(size.y, size.z)) > 0.8 and maxf(size.x, maxf(size.y, size.z)) < 3.5, "%s mesh bounds are animal-sized in the world" % kind, size)
 	var c := open_spot(1)
 	teleport(c.x + 70.0, c.y + 70.0)
 	for kind: String in ["lion", "cheetah", "tiger", "hyena"]:
@@ -715,7 +729,7 @@ func test_menu_flow() -> void:
 	main.menus.start_requested.emit()
 	await wait(0.2)
 	check(main.flow == 2 and main.hud.visible and GameState.in_game, "start button begins the game")
-	check(world.predators.predators.size() == 13, "predator roster spawned", world.predators.predators.size())
+	check(world.predators.predators.size() == PredatorManager.ROSTER_SIZE, "predator roster spawned", world.predators.predators.size())
 	check(world.prey.animals.size() >= 20, "prey herds spawned", world.prey.animals.size())
 	var kinds := {}
 	for p in world.predators.predators:
@@ -1510,7 +1524,7 @@ func test_death_and_restart() -> void:
 	main.menus.restart_requested.emit()
 	await wait(0.5)
 	check(main.flow == 2 and not player.is_dead() and player.health == 100.0 and GameState.time_survived < 2.0, "restart begins a fresh run")
-	check(world.predators.predators.size() == 13, "predators reset", world.predators.predators.size())
+	check(world.predators.predators.size() == PredatorManager.ROSTER_SIZE, "predators reset", world.predators.predators.size())
 	check(Vector2(player.global_position.x, player.global_position.z).distance_to(world.data.spawn_point) < 2.0, "deer back at the spawn")
 	# killed by a predator -> correct cause
 	player.take_damage(500.0, "Tiger")

@@ -138,7 +138,7 @@ wild-survival/
 ## Automated tests
 
 `scenes/tests/test_runner.tscn` runs the real game headless and drives it with simulated input
-(242 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
+(259 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
 behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart):
 
 ```
@@ -153,7 +153,7 @@ This project was developed in a sandbox with no GPU or display. Godot 4.7.2 was 
 there and used headless, so:
 
 - **Verified**: every asset imports; all scripts compile; all shaders compile; the test suite above
-  passes (242/242); a 20-minute unscripted soak run produced no script errors.
+  passes (259/259); a 20-minute unscripted soak run produced no script errors.
 - **Not verified on a device**: the Android export and the touch controls on a real touchscreen
   (they are tested with simulated touch events only).
 - **Not verified**: anything that needs eyes or ears. The game has never been rendered to a screen,

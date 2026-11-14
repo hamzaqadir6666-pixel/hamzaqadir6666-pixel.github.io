@@ -13,6 +13,8 @@ Used and **modified** for this project (the modified files are likewise released
 - `models/animals/deer.glb`, `lion.glb`, `tiger.glb`, `cheetah.glb` — meshes, skeletons, textures and
   animation clips converted from COLLADA to glTF, rescaled, subdivided, clips merged into one file.
   The lion and cheetah "Attack" clip and the deer "Jump" clip were derived from existing clips.
+  The lion and cheetah skeletons were re-exported without mirrored (negative-scale) bones, which
+  Godot poses incorrectly.
 - `models/environment/**` — trees, palms, bushes, plants, grass, water plants, rocks, cliffs and logs,
   converted from 0 A.D. actors to static glTF.
 - `textures/terrain/*`, `textures/water/*`, `textures/particles/*` — resized / converted.

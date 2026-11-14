@@ -3,8 +3,8 @@
     "Walk": 5.363
   },
   "res://models/animals/cheetah.glb": {
-    "Run": 1.862,
-    "Walk": 0.232
+    "Run": 1.891,
+    "Walk": 0.237
   },
   "res://models/animals/deer.glb": {
     "Run": 0.985,
@@ -15,11 +15,11 @@
   },
   "res://models/animals/hyena.glb": {
     "Run": 9.44,
-    "Walk": 2.588
+    "Walk": 2.215
   },
   "res://models/animals/lion.glb": {
-    "Run": 2.301,
-    "Walk": 0.287
+    "Run": 2.335,
+    "Walk": 0.293
   },
   "res://models/animals/tiger.glb": {
     "Run": 1.485,
