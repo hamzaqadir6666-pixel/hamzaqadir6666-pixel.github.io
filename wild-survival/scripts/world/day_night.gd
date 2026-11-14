@@ -20,6 +20,13 @@ var day_factor := 1.0
 var sunset_factor := 0.0
 var phase: StringName = &"day"
 
+## Set by Weather: overcast 0..1, rain 0..1, lightning flash 0..1. `night_vision` 0..1 is the deer's
+## Moonpetal gift: it lifts the ambient light at night so the jungle stays readable.
+var cloud := 0.0
+var rain := 0.0
+var flash := 0.0
+var night_vision := 0.0
+
 var sun: DirectionalLight3D
 var moon: DirectionalLight3D
 var env: Environment
@@ -208,7 +215,7 @@ func _update_lighting() -> void:
 		phase_changed.emit(phase)
 
 	# sun
-	var sun_energy := smoothstep(-0.04, 0.22, elev) * SUN_ENERGY
+	var sun_energy := smoothstep(-0.04, 0.22, elev) * SUN_ENERGY * (1.0 - 0.72 * cloud)
 	sun.visible = sun_energy > 0.01
 	if sun.visible:
 		sun.look_at_from_position(Vector3.ZERO, -to_sun, Vector3.UP)
@@ -216,7 +223,7 @@ func _update_lighting() -> void:
 		sun.light_color = SUN_LOW.lerp(SUN_NOON, smoothstep(0.05, 0.5, elev))
 	# moon rides opposite the sun, never quite at the horizon so nights stay readable
 	var to_moon := Vector3(-cos(a), maxf(-elev, 0.0) * 0.8 + 0.35, -0.38).normalized()
-	var moon_energy := night_factor * 0.26
+	var moon_energy := night_factor * 0.30 * (1.0 - 0.5 * cloud)
 	moon.visible = moon_energy > 0.01
 	if moon.visible:
 		moon.look_at_from_position(Vector3.ZERO, -to_moon, Vector3.UP)
@@ -232,15 +239,22 @@ func _update_lighting() -> void:
 	sky_material.set_shader_parameter("sun_color", sun.light_color)
 	sky_material.set_shader_parameter("sun_energy", sun_energy)
 	sky_material.set_shader_parameter("moon_energy", moon_energy)
+	sky_material.set_shader_parameter("cloud_cover", lerpf(0.45, 1.0, cloud))
+	sky_material.set_shader_parameter("overcast", cloud)
 	var fog := FOG_NIGHT.lerp(FOG_DAY, day_factor).lerp(FOG_SUNSET * maxf(day_factor, 0.25), sunset_factor * 0.55)
+	fog = fog.lerp(Color(0.42, 0.46, 0.48) * maxf(day_factor, 0.06), cloud * 0.7)
 	env.fog_light_color = fog
 	# morning mist, thicker night air
 	var mist := (1.0 - smoothstep(0.0, 0.5, absf(time_of_day - 6.2) / 2.0)) * 0.006
-	env.fog_density = lerpf(0.005, 0.0022, day_factor) + mist * 0.5
-	env.volumetric_fog_density = lerpf(0.003, 0.002, day_factor) + mist
+	env.fog_density = lerpf(0.005, 0.0022, day_factor) + mist * 0.5 + rain * 0.011 + cloud * 0.002
+	env.volumetric_fog_density = lerpf(0.003, 0.002, day_factor) + mist + rain * 0.004
 	env.volumetric_fog_albedo = Color(0.5, 0.6, 0.8).lerp(Color(0.7, 0.78, 0.72), day_factor)
-	env.ambient_light_color = Color(0.10, 0.14, 0.24).lerp(Color(0.42, 0.50, 0.52), day_factor)
-	env.ambient_light_energy = lerpf(0.55, DAY_AMBIENT, day_factor)
-	env.tonemap_exposure = lerpf(1.25, DAY_EXPOSURE, day_factor)
+	var nv := night_vision * night_factor
+	var amb := Color(0.10, 0.14, 0.24).lerp(Color(0.42, 0.50, 0.52), day_factor)
+	env.ambient_light_color = amb.lerp(Color(0.42, 0.62, 0.50), nv * 0.85)
+	env.ambient_light_energy = lerpf(0.62, DAY_AMBIENT, day_factor) * (1.0 - 0.25 * cloud * day_factor) + nv * 0.3 + flash * 3.0
+	env.ambient_light_sky_contribution = lerpf(0.5, 0.1, nv)
+	env.tonemap_exposure = lerpf(1.25, DAY_EXPOSURE, day_factor) + nv * 0.05 + flash * 0.6
+	env.adjustment_saturation = lerpf(1.15, 0.9, maxf(cloud * 0.6, nv * 0.5))
 	if water_material != null:
 		water_material.set_shader_parameter("night_factor", night_factor)

@@ -21,6 +21,11 @@ var player: Player
 var camera: ThirdPersonCamera
 var predators: PredatorManager
 var prey: PreyManager
+var weather: Weather
+var forage: Forage
+var birds: Birds
+var _rng := RandomNumberGenerator.new()
+var _spot_timer := 0.0
 var built := false
 var _thread: Thread
 
@@ -113,6 +118,28 @@ func build(seed_value := 20260) -> void:
 	effects.setup(data, day_night)
 	effects.follow = player
 
+	weather = Weather.new()
+	weather.name = "Weather"
+	add_child(weather)
+	weather.setup(day_night)
+	weather.follow = player
+	predators.weather = weather
+
+	forage = Forage.new()
+	forage.name = "Forage"
+	add_child(forage)
+	forage.setup(data)
+	forage.scatter(data.spawn_point)
+	player.forage = forage
+
+	birds = Birds.new()
+	birds.name = "Birds"
+	add_child(birds)
+	birds.setup(data)
+	birds.follow = player
+	prey.prey_killed.connect(func(a: Prey, _by: Node3D) -> void: birds.gather_over(a.global_position))
+	_rng.randomize()
+
 	Settings.changed.connect(_on_settings_changed)
 	loading.emit("Ready", 1.0)
 	await get_tree().process_frame
@@ -129,6 +156,17 @@ func _on_settings_changed(section: String, _key: String) -> void:
 	if section == "graphics" and built:
 		vegetation.apply_range_scale(float(Settings.get_value("graphics", "vegetation_distance")))
 		grass.reconfigure()
+		apply_animal_shadows()
+
+
+## Low-end PCs: animal shadows are one of the costlier things on screen (skinned meshes drawn again
+## for every shadow split), so they can be switched off.
+func apply_animal_shadows() -> void:
+	var on := bool(Settings.get_value("graphics", "animal_shadows"))
+	for p in predators.predators:
+		p.rig.set_shadow(on)
+	for a in prey.animals:
+		a.rig.set_shadow(on)
 
 
 func _process(delta: float) -> void:
@@ -136,24 +174,81 @@ func _process(delta: float) -> void:
 		return
 	flora.set_player_position(player.global_position)
 	vegetation.regrow(delta)
+	day_night.night_vision = move_toward(day_night.night_vision, 1.0 if GameState.has_ability("night_vision") else 0.0, delta * 0.8)
+	if GameState.in_game:
+		# standing in the rain slowly quenches thirst
+		if weather.is_raining() and not player.is_dead():
+			player.thirst = minf(player.thirst + weather.rain * 0.12 * delta, 100.0)
+		_spot_timer -= delta
+		if _spot_timer <= 0.0:
+			_spot_timer = 0.5
+			_spot_wildlife()
 
 
-## Start (or restart) a run: fresh deer, fresh predators, morning light.
+## Note every kind of animal the deer has actually laid eyes on (shown on the HUD), so the player
+## can tell that the whole cast really is out there.
+func _spot_wildlife() -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var here := player.global_position
+	for p in predators.predators:
+		if not GameState.spotted.has(p.display_name) and p.global_position.distance_to(here) < 60.0 \
+				and cam.is_position_in_frustum(p.global_position + Vector3(0, 0.6, 0)):
+			_spotted(p.display_name, "Dangerous - keep your distance.")
+	for a in prey.animals:
+		if not GameState.spotted.has(a.display_name) and a.alive() and a.global_position.distance_to(here) < 50.0 \
+				and cam.is_position_in_frustum(a.global_position + Vector3(0, 0.4, 0)):
+			_spotted(a.display_name, "Harmless. Hunters prey on it too.")
+	for b in birds.birds:
+		var bname: String = String(b["kind"]).capitalize()
+		if not GameState.spotted.has(bname) and (b["node"] as Node3D).position.distance_to(here) < 120.0 \
+				and cam.is_position_in_frustum((b["node"] as Node3D).position):
+			_spotted(bname, "Crows gather above a fresh kill." if bname == "Crow" else "It soars over the open clearings.")
+
+
+func _spotted(species: String, text: String) -> void:
+	if GameState.spot(species):
+		GameState.notify("Spotted: %s  (%d / %d)" % [species, GameState.spotted.size(), GameState.WILDLIFE.size()], text)
+
+
+## Start (or restart) a run: fresh deer at a random place, the level's hunters, weather and plants.
 func begin_run() -> void:
-	var sp := data.spawn_point
-	player.reset_at(Vector3(sp.x, data.height_at(sp.x, sp.y) + 0.3, sp.y), 0.0)
+	var info := GameState.level_info()
+	var test := GameState.test_mode
+	var sp := data.spawn_point if test else data.random_spawn(_rng)
+	data.run_spawn = sp
+	player.drain_mult = 1.0 if test else float(info["drain"])
+	player.reset_at(Vector3(sp.x, data.height_at(sp.x, sp.y) + 0.3, sp.y), _rng.randf() * TAU if not test else 0.0)
 	player.control_enabled = true
 	for p in predators.predators.duplicate():
 		predators.despawn(p)
 	predators._night_pack.clear()
-	predators.spawn_default_roster()
+	if test:
+		predators.speed_scale = 1.0
+		predators.damage_scale = 1.0
+		predators.roam_interval = 0.0
+		predators.spawn_default_roster()
+	else:
+		var hardness := float(GameState.level) / float(GameState.LEVELS.size() - 1) if GameState.mode == GameState.Mode.CAMPAIGN else 0.5
+		predators.roam_interval = lerpf(75.0, 30.0, hardness)
+		predators._roam_timer = 40.0
+		predators.speed_scale = float(info["speed"])
+		predators.damage_scale = float(info["damage"])
+		predators.shuffle_roster()
+		predators.spawn_level_roster(info["preds"])
 	predators.process_mode = Node.PROCESS_MODE_INHERIT
 	prey.clear()
 	prey.spawn_default_roster()
 	prey.process_mode = Node.PROCESS_MODE_INHERIT
 	for site in vegetation.food_sites:
 		site["amount"] = site["capacity"]
+	forage.scatter(sp, 1234 if test else 0)
+	weather.auto = not test
+	weather.reset(0.0 if test else float(info["rain"]))
 	day_night.day = 1
-	day_night.set_time(START_TIME)
+	day_night.set_time(START_TIME if test else float(info["start"]))
 	day_night.paused = false
+	day_night.night_vision = 1.0 if GameState.has_ability("night_vision") else 0.0
 	camera.snap_to_target()
+	apply_animal_shadows()

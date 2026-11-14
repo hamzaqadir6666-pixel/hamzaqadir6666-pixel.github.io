@@ -34,11 +34,25 @@ func spawn_default_roster() -> void:
 		spawn_herd("gazelle", c2 + Vector2(_rng.randf_range(-20.0, 20.0), _rng.randf_range(-20.0, 20.0)), 3)
 	# one herd grazes within sight of where the deer starts, so the jungle feels alive at once
 	var ang0 := _rng.randf() * TAU
-	spawn_herd("gazelle", world.spawn_point + Vector2(cos(ang0), sin(ang0)) * 38.0, 4, 10.0)
-	spawn_herd("boar", world.spawn_point - Vector2(cos(ang0), sin(ang0)) * 55.0, 2, 12.0)
-	# boar root about in the forest
-	for c: Vector2 in [Vector2(-150.0, 60.0), Vector2(90.0, -120.0), Vector2(170.0, 60.0), Vector2(-60.0, 190.0), Vector2(20.0, 40.0)]:
-		spawn_herd("boar", c, 2)
+	var start := world.run_spawn
+	spawn_herd("gazelle", start + Vector2(cos(ang0), sin(ang0)) * 38.0, 4, 10.0)
+	spawn_herd("boar", start - Vector2(cos(ang0), sin(ang0)) * 42.0, 3, 10.0)
+	spawn_herd("junglefowl", start + Vector2(cos(ang0 + 1.6), sin(ang0 + 1.6)) * 26.0, 4, 8.0)
+	# boar root about in the forest (sounders of three, all over the map)
+	for c: Vector2 in [Vector2(-150.0, 60.0), Vector2(90.0, -120.0), Vector2(170.0, 60.0), Vector2(-60.0, 190.0), Vector2(20.0, 40.0),
+			Vector2(-250.0, -200.0), Vector2(260.0, 220.0), Vector2(-20.0, -90.0)]:
+		spawn_herd("boar", c, 3)
+	# goats keep to the higher, rougher ground; buffalo to the wet meadows; foxes go alone
+	for c2: Vector2 in [Vector2(-320.0, 120.0), Vector2(300.0, -150.0), Vector2(60.0, 330.0), Vector2(-90.0, -330.0)]:
+		spawn_herd("goat", c2, 4)
+	for i in mini(world.lakes.size(), 3):
+		var lc: Vector2 = world.lakes[i]["center"]
+		var lr: Vector2 = world.lakes[i]["radii"]
+		spawn_herd("buffalo", lc + Vector2(lr.x + 22.0, 0.0).rotated(_rng.randf() * TAU), 3, 16.0)
+	for c3: Vector2 in [Vector2(-40.0, 130.0), Vector2(130.0, 30.0), Vector2(-200.0, -40.0), Vector2(220.0, -260.0), Vector2(-280.0, 280.0)]:
+		spawn_herd("fox", c3, 1)
+	for c4: Vector2 in [Vector2(40.0, -40.0), Vector2(-110.0, 110.0), Vector2(190.0, 150.0), Vector2(-170.0, -250.0)]:
+		spawn_herd("junglefowl", c4, 4)
 
 
 func spawn_herd(kind: String, where: Vector2, count: int, scatter := 30.0) -> Array[Prey]:

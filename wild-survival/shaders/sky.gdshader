@@ -11,6 +11,7 @@ uniform float day_factor = 1.0;       // 0 night .. 1 day
 uniform float sunset_factor = 0.0;    // 0..1 around sunrise / sunset
 uniform float cloud_cover : hint_range(0.0, 1.0) = 0.45;
 uniform float cloud_speed = 0.006;
+uniform float overcast : hint_range(0.0, 1.0) = 0.0;   // storm: grey, heavy sky
 uniform float star_intensity = 1.0;
 uniform vec3 sun_direction = vec3(0.0, 1.0, 0.0);   // toward the sun
 uniform vec3 moon_direction = vec3(0.0, -1.0, 0.0);
@@ -72,7 +73,9 @@ void sky() {
 		vec3 cloud_day = mix(vec3(0.95, 0.96, 0.98), vec3(0.6, 0.63, 0.7), smoothstep(0.5, 1.0, n));
 		vec3 cloud_col = mix(vec3(0.03, 0.04, 0.07), cloud_day, day_factor);
 		cloud_col = mix(cloud_col, sunset_color * 1.1, sunset_factor * 0.6 * (0.3 + 0.7 * toward));
-		col = mix(col, cloud_col, c * 0.85);
+		cloud_col = mix(cloud_col, cloud_col * vec3(0.42, 0.45, 0.5), overcast);
+		col = mix(col, vec3(0.30, 0.33, 0.37) * max(day_factor, 0.04), overcast * 0.75);
+		col = mix(col, cloud_col, c * mix(0.85, 1.0, overcast));
 	}
 	if (dir.y < 0.0) {
 		col = mix(col, ground_color * mix(0.08, 1.0, day_factor), smoothstep(0.0, -0.08, dir.y));

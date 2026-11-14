@@ -22,8 +22,9 @@ Used and **modified** for this project (the modified files are likewise released
   game over (*Dried Tears*).
 - `audio/ambience/*` except the two files listed under "Original" below.
 - `audio/animals/lion_*` — original recordings.
-- `models/animals/gazelle.glb`, `boar.glb` — 0 A.D. gazelle and boar (mesh, skeleton, texture, Idle and
-  Walk clips), © Wildfire Games, CC BY-SA 3.0. glTF conversion taken from
+- `models/animals/gazelle.glb`, `boar.glb`, `goat.glb`, `zebu.glb` (the buffalo), `fox.glb`,
+  `chicken.glb` (the junglefowl), `wolf.glb`, `crocodile.glb`, `hawk.glb`, `crow.glb` — 0 A.D. fauna
+  (mesh, skeleton, texture, Idle and Walk / flight clips), © Wildfire Games, CC BY-SA 3.0. glTF conversion taken from
   https://github.com/Vitexus/ishtaria-client (`assets/zeroad/fauna/`), buffers repacked for Godot.
 - `audio/animals/tiger_*`, `cheetah_attack*`, `cheetah_growl`, `hyena_attack*`, `hyena_growl` —
   **derived** from the 0 A.D. lion recordings by pitch shifting and filtering. They are stand-ins, not
@@ -53,3 +54,9 @@ Code, shaders, UI, sky and the bird-flock silhouettes are original.
 ## Engine
 
 Godot Engine — MIT — <https://godotengine.org>
+
+## Generated in code
+
+- Rain loop (`scripts/world/weather.gd::make_rain_stream`) — filtered noise synthesised at start-up.
+- HUD icons (`scripts/ui/hud_icon.gd`) and the rare plants (`scripts/world/forage.gd`) are drawn / built
+  from primitives in code; no external assets.

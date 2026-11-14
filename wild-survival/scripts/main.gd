@@ -1,7 +1,7 @@
 extends Node
 ## Game flow: loading -> main menu -> playing <-> paused -> game over -> restart.
 
-enum Flow { LOADING, MENU, PLAYING, PAUSED, GAME_OVER }
+enum Flow { LOADING, MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE }
 
 const WORLD_SCENE := preload("res://scenes/world/world.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
@@ -22,6 +22,7 @@ func _ready() -> void:
 	menus.resume_requested.connect(resume)
 	menus.restart_requested.connect(start_game)
 	menus.menu_requested.connect(to_menu)
+	menus.next_level_requested.connect(next_level)
 	menus.quit_requested.connect(func() -> void: get_tree().quit())
 	menus.show_loading("Loading...", 0.0)
 	Settings.changed.connect(_on_settings_changed)
@@ -35,6 +36,8 @@ func _ready() -> void:
 	hud = HUD_SCENE.instantiate()
 	add_child(hud)
 	hud.bind(world.player, world.day_night, world.predators, world.camera)
+	hud.weather = world.weather
+	hud.forage = world.forage
 	hud.visible = false
 	world.player.died.connect(_on_player_died)
 	world.day_night.day_passed.connect(_on_day_passed)
@@ -53,6 +56,8 @@ func to_menu() -> void:
 	_death_timer = -1.0
 	hud.visible = false
 	world.predators.process_mode = Node.PROCESS_MODE_DISABLED
+	world.prey.process_mode = Node.PROCESS_MODE_DISABLED
+	world.weather.reset(0.0)
 	world.player.control_enabled = false
 	if world.player.is_dead():
 		world.player.reset_at(world.player.global_position, 0.0)
@@ -75,7 +80,35 @@ func start_game() -> void:
 	flow = Flow.PLAYING
 	_capture_mouse()
 	AudioManager.play_music("day", 3.0, -15.0)
-	GameState.notify("Survive", "Eat, drink, stay hidden. Find the safe thickets before nightfall.")
+	var info := GameState.level_info()
+	if GameState.mode == GameState.Mode.CAMPAIGN:
+		GameState.notify("Level %d: %s" % [GameState.level + 1, info["name"]],
+			"%s Survive %d minutes and eat %d rare glowing plants." % [info["brief"], int(info["minutes"]), int(info["plants"])])
+	else:
+		GameState.notify("Survive", "Eat, drink, stay hidden. Find the safe thickets before nightfall.")
+	if world.player.speed_mult < 0.99:
+		GameState.notify("Find Swift Clover", "You are slow for now. Each glowing green clover makes you faster for good.")
+
+
+func next_level() -> void:
+	if not GameState.is_last_level():
+		GameState.advance_level()
+	start_game()
+
+
+func _complete_level() -> void:
+	flow = Flow.LEVEL_COMPLETE
+	GameState.in_game = false
+	GameState.set_threat(GameState.Threat.CALM)
+	GameState.save_progress()
+	world.player.control_enabled = false
+	world.predators.process_mode = Node.PROCESS_MODE_DISABLED
+	world.camera.input_enabled = false
+	hud.visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	AudioManager.play_ui("res://audio/ui/discover.ogg", -2.0)
+	AudioManager.play_music("menu", 2.0, -9.0)
+	menus.show_level_complete()
 
 
 func pause() -> void:
@@ -97,6 +130,13 @@ func resume() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# F11 / Alt+Enter: fullscreen <-> window
+	if event is InputEventKey and event.pressed and not event.echo:
+		var k := event as InputEventKey
+		if k.keycode == KEY_F11 or (k.keycode == KEY_ENTER and k.alt_pressed):
+			Settings.toggle_fullscreen()
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed("pause"):
 		if flow == Flow.PLAYING:
 			pause()
@@ -137,6 +177,9 @@ func _process(delta: float) -> void:
 			world.camera.orbit(delta)
 		Flow.PLAYING:
 			GameState.time_survived += delta
+			if _death_timer < 0.0 and not world.player.is_dead() and GameState.check_objective():
+				_complete_level()
+				return
 			if _death_timer >= 0.0:
 				_death_timer -= delta
 				if _death_timer < 0.0:

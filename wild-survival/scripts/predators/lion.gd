@@ -68,7 +68,7 @@ func _think_patrol(dt: float) -> void:
 		return
 	if at_target():
 		# lions sleep most of the day, patrol most of the night
-		var rest_chance := lerpf(0.75, 0.15, night())
+		var rest_chance := lerpf(0.45, 0.12, night())
 		if has_target and rng.randf() < rest_chance:
 			set_state(State.REST)
 			return
@@ -80,14 +80,14 @@ func _think_rest(dt: float) -> void:
 	if _react_to_awareness():
 		return
 	if _wait <= 0.0:
-		_wait = rng.randf_range(14.0, 30.0) * lerpf(1.0, 0.35, night())
+		_wait = rng.randf_range(8.0, 18.0) * lerpf(1.0, 0.4, night())
 	if state_time > _wait:
 		set_state(State.PATROL)
 
 
 func _on_detected() -> void:
 	# roar first: an honest warning before the charge
-	_windup = 0.9
+	_windup = 0.7
 	vocalize("roar", 4.0, true)
 	set_state(State.CHASE)
 	if manager != null:
@@ -96,9 +96,9 @@ func _on_detected() -> void:
 
 func _think_chase(dt: float) -> void:
 	if _windup > 0.0:
+		# roaring: it stalks forward, eyes locked, then explodes into the charge
 		_windup -= dt
-		stop_moving()
-		_face_point(player.global_position)
+		go_to(player.global_position, walk_speed * 1.4)
 		return
 	super._think_chase(dt)
 

@@ -14,6 +14,10 @@ var species := "predator"
 var display_name := "Predator"
 var model_path := ""
 var model_scale := 1.0
+var model_faces_plus_z := true
+var lunge_height := 0.28          ## how high the body rises in the strike
+var speed_scale := 1.0            ## level difficulty (set by the manager before _ready)
+var damage_scale := 1.0
 var clip_aliases: Dictionary = {}
 var walk_speed := 1.8
 var trot_speed := 4.0
@@ -97,6 +101,7 @@ var prey_hunt_time := 16.0        ## how long it will chase a wild animal before
 var _hunt_cd := 0.0
 var _anim_lock := 0.0
 var _clip_hold := 0.0
+var _orbit_dir := 0.0
 var _gait := 0                    ## 0 idle, 1 walk, 2 run
 
 
@@ -104,6 +109,10 @@ func _ready() -> void:
 	add_to_group("predators")
 	rng.randomize()
 	_configure()
+	walk_speed *= lerpf(1.0, speed_scale, 0.5)
+	trot_speed *= speed_scale
+	run_speed *= speed_scale
+	attack_damage *= damage_scale
 	collision_layer = 8
 	collision_mask = 7
 	floor_max_angle = deg_to_rad(55.0)
@@ -118,7 +127,7 @@ func _ready() -> void:
 	rig = AnimalRig.new()
 	rig.name = "Rig"
 	add_child(rig)
-	rig.setup(model_path, model_scale, clip_aliases)
+	rig.setup(model_path, model_scale, clip_aliases, model_faces_plus_z)
 	rig.play("Idle")
 	_voice = AudioStreamPlayer3D.new()
 	_voice.bus = "SFX"
@@ -249,7 +258,8 @@ func sense() -> float:
 	if engaged:
 		# already locked on: cover only helps once the deer has opened a gap
 		vis = maxf(vis, 0.4 if d < 14.0 else 0.12)
-	var vrange := vision_range * lerpf(1.0, night_vision, night())
+	var wet: float = manager.sense_factor() if manager != null else 1.0
+	var vrange := vision_range * lerpf(1.0, night_vision, night()) * wet
 	if state == State.REST or state == State.FEED:
 		vrange *= 0.55
 	var eff := vrange * clampf(vis, 0.0, 1.0)
@@ -261,7 +271,7 @@ func sense() -> float:
 	if d < eff and _line_of_sight():
 		sight = clampf(1.15 - d / eff, 0.15, 1.0)
 		sees_player = true
-	var hr := player.noise_radius * hearing * lerpf(1.0, 1.2, night())
+	var hr := player.noise_radius * hearing * lerpf(1.0, 1.2, night()) * wet
 	if state == State.REST:
 		hr *= 0.7
 	var heard := 0.0
@@ -287,7 +297,7 @@ func _line_of_sight() -> bool:
 func _update_awareness(dt: float) -> void:
 	var s := sense()
 	if s > 0.0:
-		awareness = minf(awareness + s * awareness_gain * activity() * dt, 1.0)
+		awareness = minf(awareness + s * awareness_gain * 1.2 * activity() * dt, 1.0)
 		last_known = player.global_position
 		var pv := player.velocity
 		pv.y = 0.0
@@ -475,8 +485,10 @@ func _think_chase(_dt: float) -> void:
 		if player_distance < attack_range + 0.5 and _attack_cd <= 0.0 and not player.in_grove:
 			_begin_attack()
 			return
-		if player_distance < attack_range * 0.7:
-			# already on top of the prey: hold ground and keep facing it until the next strike
+		if player_distance < attack_range * 0.9 and _attack_cd > 0.0:
+			# between strikes: prowl round the prey instead of standing frozen in front of it
+			_circle_prey()
+		elif player_distance < attack_range * 0.7:
 			stop_moving()
 			_face_point(player.global_position)
 		else:
@@ -488,6 +500,19 @@ func _think_chase(_dt: float) -> void:
 			return
 	if _should_give_up():
 		_give_up()
+
+
+## Sidestep around the deer while the next strike is being readied.
+func _circle_prey() -> void:
+	var off := global_position - player.global_position
+	off.y = 0.0
+	if off.length() < 0.1:
+		off = -forward()
+	if _orbit_dir == 0.0:
+		_orbit_dir = 1.0 if rng.randf() < 0.5 else -1.0
+	var p := player.global_position + off.normalized().rotated(Vector3.UP, 0.9 * _orbit_dir) * attack_range * 1.05
+	go_to(p, trot_speed * 0.8)
+	_face_point(player.global_position)
 
 
 ## Override: species specific reasons to abandon a chase.
@@ -651,6 +676,8 @@ func _attack_damage_now() -> float:
 
 func _attack_update(_delta: float) -> void:
 	var t := state_time / attack_anim_time
+	# the body leaps at the prey, whatever the animation clip does
+	rig.lift = sin(clampf(t / 0.7, 0.0, 1.0) * PI) * lunge_height
 	if t < 0.5:
 		# lunge
 		if player_distance > attack_range * 0.6:
@@ -671,6 +698,8 @@ func _attack_update(_delta: float) -> void:
 				_on_attack_landed()
 	if t >= 1.0:
 		_attack_cd = attack_cooldown
+		rig.lift = 0.0
+		_orbit_dir = 0.0
 		_after_attack()
 
 
@@ -822,6 +851,7 @@ func _dormant_move(dt: float) -> void:
 
 func _animate(delta: float) -> void:
 	if state == State.ATTACK:
+		_ground_rig(delta)
 		return
 	_anim_lock = maxf(_anim_lock - delta, 0.0)
 	_clip_hold = maxf(_clip_hold - delta, 0.0)

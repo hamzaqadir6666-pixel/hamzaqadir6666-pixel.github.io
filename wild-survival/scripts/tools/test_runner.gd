@@ -14,6 +14,9 @@ var failures: PackedStringArray = []
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	var t0 := Time.get_ticks_msec()
+	# the classic tests run on the fixed spawn, with the full-speed deer and the endless roster
+	GameState.test_mode = true
+	GameState.set_mode(GameState.Mode.ENDLESS)
 	main = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	add_child(main)
 	while main.get("world") == null or not main.world.built or main.flow == 0:
@@ -108,6 +111,13 @@ func open_spot(index := 1) -> Vector2:
 ## Unscripted play: a naive bot wanders for several in-game minutes (set WS_SOAK=<minutes>).
 func soak(minutes: float) -> void:
 	print("\n-- soak (%.0f min of unscripted play)" % minutes)
+	# the real game: campaign level, random spawn, slow deer, weather
+	GameState.test_mode = false
+	GameState.set_mode(GameState.Mode.CAMPAIGN)
+	GameState.abilities = {}
+	GameState.level = int(OS.get_environment("WS_LEVEL")) if OS.get_environment("WS_LEVEL") != "" else 2
+	var weather_seen := {}
+	var levels_won := 0
 	main.menus.start_requested.emit()
 	await wait(0.5)
 	var rng := RandomNumberGenerator.new()
@@ -137,6 +147,12 @@ func soak(minutes: float) -> void:
 		for p in world.predators.predators:
 			var key := p.species + ":" + p.state_name()
 			hist[key] = int(hist.get(key, 0)) + 1
+		weather_seen[world.weather.state_name()] = int(weather_seen.get(world.weather.state_name(), 0)) + 1
+		if main.flow == 5:
+			levels_won += 1
+			main.menus.next_level_requested.emit()
+			await wait(0.5)
+			hp = player.health
 		if main.flow == 4:
 			deaths.append("%s at %s (day %d %s)" % [GameState.cause_of_death, GameState.format_time(GameState.time_survived), world.day_night.day, world.day_night.clock_text()])
 			main.menus.restart_requested.emit()
@@ -145,6 +161,7 @@ func soak(minutes: float) -> void:
 	release_all()
 	print("  [info] predator state seconds: ", hist)
 	print("  [info] bot deaths: ", deaths)
+	print("  [info] level %d, weather seconds %s, plants found %d, wildlife seen %s, levels won %d" % [GameState.level + 1, weather_seen, GameState.plants_found, GameState.spotted.keys(), levels_won])
 	print("  [info] hits taken %d, seconds hunted %.0f, escapes %d, clock day %d %s" % [hits, hunted_time, GameState.escapes, world.day_night.day, world.day_night.clock_text()])
 	print("  [info] prey: %d alive of %d, %d killed by predators" % [world.prey.living(), world.prey.animals.size(), world.prey.kills])
 	check(true, "soak finished without stalling")
@@ -268,6 +285,12 @@ func _run() -> void:
 		world.predators.allow_hunts = true
 		await soak(float(OS.get_environment("WS_SOAK")))
 		return
+	if OS.get_environment("WS_ONLY") != "":
+		# run a few named tests only, e.g. WS_ONLY=cheetah,expansion
+		await test_menu_flow()
+		for t in OS.get_environment("WS_ONLY").split(","):
+			await call("test_" + t)
+		return
 	await test_load()
 	await test_layout()
 	await test_menu_flow()
@@ -287,6 +310,7 @@ func _run() -> void:
 	await test_audio()
 	await test_pause_settings()
 	await test_death_and_restart()
+	await test_expansion()
 
 
 func test_load() -> void:
@@ -333,11 +357,11 @@ func test_load() -> void:
 ## AnimalRig uses to match animation speed to movement speed so feet do not slide.
 func measure_strides() -> void:
 	var out := {}
-	for path: String in ["lion", "tiger", "cheetah", "hyena", "deer", "gazelle", "boar"]:
+	for path: String in ["lion", "tiger", "cheetah", "hyena", "deer", "gazelle", "boar", "crocodile", "wolf", "goat", "zebu", "fox", "chicken"]:
 		var full := "res://models/animals/%s.glb" % path
 		var rig := AnimalRig.new()
 		add_child(rig)
-		rig.setup(full, 1.0, {"Run": "Gallop"}, not (path in ["gazelle", "boar"]))
+		rig.setup(full, 1.0, {"Run": "Gallop"}, not (path in ["gazelle", "boar", "crocodile", "wolf", "goat", "zebu", "fox", "chicken"]))
 		var skel: Skeleton3D = rig.find_children("*", "Skeleton3D", true, false)[0]
 		var entry := {}
 		for clip: String in ["Walk", "Run"]:
@@ -442,7 +466,7 @@ func test_layout() -> void:
 	check(m._root.size.distance_to(view) < 2.0, "menu root covers the screen", "%s of %s" % [m._root.size, view])
 	check(_on_screen(m._main) and m._main.size.distance_to(view) < 2.0, "main menu page covers the screen", m._main.size)
 	var buttons := m._main.find_children("*", "Button", true, false)
-	var ok := buttons.size() == 4
+	var ok := buttons.size() == 7
 	for b: Button in buttons:
 		ok = ok and _on_screen(b) and b.global_position.x < view.x * 0.3 and b.size.x < 400.0
 	check(ok, "main menu buttons sit on the left, on screen", "%d buttons, first at %s" % [buttons.size(), (buttons[0] as Button).global_position])
@@ -1144,7 +1168,8 @@ func test_cheetah() -> void:
 		if player.health < hp:
 			hit = true
 			break
-	check(t_chase >= 0.0, "cheetah spots the deer from 45 m", "after %.1f s" % t_chase)
+	check(t_chase >= 0.0, "cheetah spots the deer from 45 m", "after %.1f s (state %s, awareness %.2f, rest left %.1f s, deer visibility %.2f, sees %s, dist %.0f)" % [t_chase,
+		cheetah.state_name(), cheetah.awareness, cheetah._exhausted_until - Time.get_ticks_msec() * 0.001, player.visibility, cheetah.sees_player, cheetah.player_distance])
 	check(top > 14.0, "cheetah reaches very high speed", "top %.1f m/s" % top)
 	check(speed_at_1s < top * 0.75, "cheetah has to accelerate", "%.1f m/s after 1 s, top %.1f" % [speed_at_1s, top])
 	check(hit, "cheetah catches a standing deer")
@@ -1534,3 +1559,380 @@ func test_death_and_restart() -> void:
 	await wait(0.3)
 	check(main.flow == 1 and main.menus.current_screen() == "main" and not player.is_dead(), "main menu reachable from game over")
 	check(world.grass.pooled_reuses > 0, "grass cells are pooled and reused", world.grass.pooled_reuses)
+
+
+func _count(kind: String) -> int:
+	var n := 0
+	for p in world.predators.predators:
+		if p.species == kind:
+			n += 1
+	return n
+
+
+func _prey_count(kind: String) -> int:
+	var n := 0
+	for a in world.prey.animals:
+		if a.kind == kind:
+			n += 1
+	return n
+
+
+## The expansion: levels, random spawn, slow start + speed plants, abilities, night vision, weather,
+## new animals and birds, icon HUD, window settings, more convincing attacks.
+func test_expansion() -> void:
+	print("\n-- expansion: HUD icons")
+	var hud: HUD = main.hud
+	var kinds: PackedStringArray = []
+	for key: String in ["health", "stamina", "hunger", "thirst"]:
+		kinds.append((hud._icons[key] as HudIcon).kind)
+	check(kinds == PackedStringArray(["heart", "bolt", "leaf", "drop"]), "stats use heart / bolt / leaf / drop icons", kinds)
+	check(hud._root.find_children("*", "HudIcon", true, false).size() >= 14, "icons for stats, abilities, goal and weather", hud._root.find_children("*", "HudIcon", true, false).size())
+	check(hud._ability_icons.size() == GameState.ABILITIES.size(), "one HUD icon per ability", hud._ability_icons.size())
+
+	print("\n-- expansion: window")
+	check(int(ProjectSettings.get_setting("display/window/size/mode")) == 0 and bool(ProjectSettings.get_setting("display/window/size/resizable"))
+		and not bool(ProjectSettings.get_setting("display/window/size/borderless")), "game starts in a resizable window with a title bar")
+	check(int(ProjectSettings.get_setting("display/window/size/window_width_override")) == 1280, "window opens smaller than a 1080p screen", ProjectSettings.get_setting("display/window/size/window_width_override"))
+	check(Settings.DEFAULTS["graphics"].has("window_mode") and int(Settings.DEFAULTS["graphics"]["window_mode"]) == 0, "window mode setting defaults to windowed")
+	var wm := int(Settings.get_value("graphics", "window_mode"))
+	Settings.toggle_fullscreen()
+	check(int(Settings.get_value("graphics", "window_mode")) == 2, "F11 toggle selects fullscreen")
+	Settings.toggle_fullscreen()
+	check(int(Settings.get_value("graphics", "window_mode")) == 0, "F11 toggle returns to the window")
+	Settings.set_value("graphics", "window_mode", wm, false)
+	check(main.menus.settings.find_children("*", "OptionButton", true, false).size() >= 3, "settings menu has the window mode option")
+
+	print("\n-- expansion: low-end options")
+	var preset0 := int(Settings.get_value("graphics", "preset"))
+	Settings.set_value("graphics", "preset", 0, false)
+	check(not bool(Settings.get_value("graphics", "animal_shadows")) and not bool(Settings.get_value("graphics", "ssao"))
+		and float(Settings.get_value("graphics", "render_scale")) < 0.7, "Low preset: no animal shadows, no SSAO, reduced render scale")
+	check(world.weather._max_drops <= 500, "Low preset: fewer rain particles", world.weather._max_drops)
+	Settings.set_value("graphics", "preset", preset0, false)
+	check(Settings.guess_preset() >= 0 and Settings.guess_preset() <= 2, "hardware guess picks a preset", Settings.guess_preset())
+
+	print("\n-- expansion: levels, random spawn, slow start")
+	GameState.test_mode = false
+	check(GameState.LEVELS.size() >= 8, "eight campaign levels", GameState.LEVELS.size())
+	var harder := true
+	for i in range(1, GameState.LEVELS.size()):
+		var a: Dictionary = GameState.LEVELS[i - 1]
+		var b: Dictionary = GameState.LEVELS[i]
+		harder = harder and float(b["speed"]) >= float(a["speed"]) and float(b["damage"]) >= float(a["damage"]) and float(b["minutes"]) >= float(a["minutes"])
+	check(harder, "levels get longer and the hunters faster and stronger")
+	GameState.new_campaign()
+	var spawns: Array = []
+	for run in 3:
+		main.start_game()
+		await wait(0.3)
+		var sp := Vector2(player.global_position.x, player.global_position.z)
+		spawns.append(sp)
+		check(world.data.is_walkable(sp.x, sp.y) and world.data.water_depth(sp.x, sp.y) <= 0.0, "random spawn %d is on dry walkable ground" % run, sp)
+		var near := INF
+		for p in world.predators.predators:
+			near = minf(near, p.global_position.distance_to(player.global_position))
+		check(near > 40.0, "no hunter next to random spawn %d" % run, "%.0f m" % near)
+	check((spawns[0] as Vector2).distance_to(spawns[1]) > 5.0 or (spawns[1] as Vector2).distance_to(spawns[2]) > 5.0, "the deer starts somewhere different each game", spawns)
+	check(GameState.level == 0 and _count("lion") >= 1 and _count("tiger") >= 1 and _count("cheetah") >= 1 and _count("hyena") >= 2 and _count("crocodile") >= 1,
+		"level 1 has every big cat, hyenas and crocodiles", "%d lion %d tiger %d cheetah %d hyena %d croc" % [_count("lion"), _count("tiger"), _count("cheetah"), _count("hyena"), _count("crocodile")])
+	var lvl1 := world.predators.predators.size()
+	var shore := true
+	var croc_info: PackedStringArray = []
+	for p in world.predators.predators:
+		if p.species == "crocodile":
+			var wd := world.data.water_distance(p.global_position.x, p.global_position.z)
+			croc_info.append("%.1f m" % wd)
+			shore = shore and wd < 8.0
+	check(shore, "crocodiles lie at the water's edge", croc_info)
+	for kind: String in ["gazelle", "boar", "goat", "buffalo", "fox", "junglefowl"]:
+		check(_prey_count(kind) >= 3, "%s live in the jungle" % kind, _prey_count(kind))
+	check(_prey_count("boar") >= 20, "plenty of boar", _prey_count("boar"))
+	var boar_near := 0
+	for a2 in world.prey.animals:
+		if a2.kind == "boar" and a2.global_position.distance_to(player.global_position) < 70.0:
+			boar_near += 1
+	check(boar_near >= 2, "boar root about near where the deer starts", boar_near)
+	for a3 in world.prey.animals:
+		if a3.rig.anim == null or not a3.rig.has("Walk"):
+			check(false, "%s model animates" % a3.kind)
+			break
+	check(absf(player.speed_mult - GameState.SWIFT_START) < 0.001, "a new deer starts slow", player.speed_mult)
+	world.predators.process_mode = Node.PROCESS_MODE_DISABLED
+	# measured sprint speed, slow deer
+	var s := open_spot(1)
+	teleport(s.x, s.y)
+	restore_stats()
+	Input.action_press("move_forward")
+	Input.action_press("sprint")
+	await wait(2.0)
+	var slow := player.horizontal_speed()
+	release_all()
+	await wait(0.5)
+	check(slow < Player.SPRINT_SPEED * 0.86 and slow > Player.SPRINT_SPEED * 0.7, "starting sprint is clearly slower", "%.1f m/s" % slow)
+
+	print("\n-- expansion: rare plants and abilities")
+	var forage := world.forage
+	var per_kind := {}
+	var dry := true
+	for it in forage.items:
+		per_kind[it["kind"]] = int(per_kind.get(it["kind"], 0)) + 1
+		var ip: Vector3 = it["pos"]
+		dry = dry and world.data.is_walkable(ip.x, ip.z) and world.data.water_depth(ip.x, ip.z) <= 0.0
+	check(per_kind.size() == Forage.KINDS.size() and forage.items.size() > 60, "every kind of rare plant grows", per_kind)
+	check(dry, "all rare plants are on dry reachable ground")
+	var moon := forage.nearest(player.global_position, 2000.0, "moonpetal")
+	var start_moon := forage.nearest(Vector3(world.data.run_spawn.x, 0.0, world.data.run_spawn.y), 2000.0, "moonpetal")
+	check(Vector2(start_moon["pos"].x, start_moon["pos"].z).distance_to(world.data.run_spawn) < 90.0, "a Moonpetal grows within reach of the start")
+	# walk up to a clover and eat it with the interact key
+	var clover := forage.nearest(player.global_position, 2000.0, "clover")
+	var cp: Vector3 = clover["pos"]
+	teleport(cp.x + 1.0, cp.z)
+	await wait(0.3)
+	check(player.interaction_hint().contains("Swift Clover"), "prompt appears next to a rare plant", player.interaction_hint())
+	Input.action_press("interact")
+	await wait(0.4)
+	release_all()
+	check(clover["eaten"] and GameState.stacks("swift") == 1 and player.speed_mult > GameState.SWIFT_START + 0.03, "eating Swift Clover makes the deer faster", player.speed_mult)
+	check(GameState.plants_found == 1, "rare plant counted toward the level goal", GameState.plants_found)
+	Input.action_press("move_forward")
+	Input.action_press("sprint")
+	teleport(s.x, s.y)
+	player.stamina = player.max_stamina
+	await wait(2.0)
+	var faster := player.horizontal_speed()
+	release_all()
+	await wait(0.4)
+	check(faster > slow + 0.25, "sprint really is faster after the clover", "%.2f -> %.2f m/s" % [slow, faster])
+	for i in 20:
+		GameState.grant("swift")
+	player.apply_abilities(false)
+	check(player.speed_mult <= GameState.SWIFT_START + GameState.SWIFT_STEP * GameState.SWIFT_MAX + 0.001 and player.speed_mult > 1.2, "speed gain is capped", player.speed_mult)
+	# night vision
+	var dn := world.day_night
+	dn.set_time(0.5)
+	await wait(1.5)
+	var dark := dn.env.ambient_light_energy * dn.env.ambient_light_color.get_luminance() * lerpf(1.0, 0.1, dn.env.ambient_light_sky_contribution)
+	forage.eat(moon, player)
+	await wait(2.5)
+	check(GameState.has_ability("night_vision") and dn.env.ambient_light_energy * dn.env.ambient_light_color.get_luminance() * lerpf(1.0, 0.1, dn.env.ambient_light_sky_contribution) > dark * 4.0
+		and dn.env.ambient_light_energy < 1.2, "Moonpetal unlocks night vision (clearly brighter nights, not washed out)",
+		"ambient light %.3f -> %.3f" % [dark, dn.env.ambient_light_energy * dn.env.ambient_light_color.get_luminance() * lerpf(1.0, 0.1, dn.env.ambient_light_sky_contribution)])
+	dn.set_time(12.0)
+	await wait(0.3)
+	var noon_amb := dn.env.ambient_light_energy
+	check(noon_amb < 0.7, "night vision does not wash out the day", noon_amb)
+	# the other gifts
+	var mh := player.max_health
+	forage.eat(forage.nearest(player.global_position, 2000.0, "ironbark"), player)
+	check(player.max_health == mh + 10.0 and GameState.has_ability("iron_hide"), "Ironbark raises max health")
+	var ms := player.max_stamina
+	forage.eat(forage.nearest(player.global_position, 2000.0, "sunberry"), player)
+	check(player.max_stamina == ms + 10.0, "Sunberry raises max stamina")
+	forage.eat(forage.nearest(player.global_position, 2000.0, "ghostfern"), player)
+	check(player.noise_mult < 0.6, "Ghost Fern quiets the deer", player.noise_mult)
+	forage.eat(forage.nearest(player.global_position, 2000.0, "springlily"), player)
+	check(player.jump_mult > 1.2, "Spring Lily gives a higher jump", player.jump_mult)
+	forage.eat(forage.nearest(player.global_position, 2000.0, "lotus"), player)
+	check(player.swim_mult > 1.5, "Lotus Root gives fast swimming", player.swim_mult)
+	forage.eat(forage.nearest(player.global_position, 2000.0, "owlcap"), player)
+	check(GameState.has_ability("keen_senses"), "Owl-eye Mushroom gives keen senses")
+	player.health = 30.0
+	forage.eat(forage.nearest(player.global_position, 2000.0, "herb"), player)
+	check(player.health >= 74.0, "Healing Herb heals", player.health)
+	player.hunger = 20.0
+	forage.eat(forage.nearest(player.global_position, 2000.0, "honey"), player)
+	check(player.hunger >= 99.0, "Honeycomb fills the stomach", player.hunger)
+	var found := GameState.plants_found
+	forage.eat(forage.nearest(player.global_position, 2000.0, "toadstool"), player)
+	var hp := player.health
+	await wait(2.0)
+	check(player.poisoned > 0.0 and player.health < hp and GameState.plants_found == found, "Red Toadstool poisons and does not count", "%.1f -> %.1f" % [hp, player.health])
+	player.poisoned = 0.0
+	await wait(0.3)
+	var lit := 0
+	for id: String in hud._ability_icons:
+		if not (hud._ability_icons[id] as HudIcon).dim:
+			lit += 1
+	check(lit == GameState.ABILITIES.size(), "HUD lights up every unlocked ability", lit)
+
+	print("\n-- expansion: weather")
+	var w := world.weather
+	restore_stats()
+	dn.set_time(12.0)
+	w.auto = false
+	w.set_state(Weather.State.CLEAR, true)
+	await wait(0.3)
+	var sun_clear := dn.sun.light_energy
+	var fog_clear := dn.env.fog_density
+	check(not w._rain.emitting and not w.is_raining() and w.sense_factor() == 1.0, "clear sky: no rain")
+	w.set_state(Weather.State.RAIN, true)
+	await wait(0.5)
+	check(w._rain.emitting and w._splash.emitting and w.is_raining(), "rain falls", "rain %.2f" % w.rain)
+	check(dn.sun.light_energy < sun_clear * 0.6 and dn.env.fog_density > fog_clear * 1.8, "rain darkens the sky and thickens the air",
+		"sun %.2f -> %.2f, fog %.4f -> %.4f" % [sun_clear, dn.sun.light_energy, fog_clear, dn.env.fog_density])
+	check(w._loop.playing and w._loop.volume_db > -20.0, "rain can be heard", w._loop.volume_db)
+	check(float(dn.sky_material.get_shader_parameter("cloud_cover")) > 0.9, "sky clouds over")
+	check(w.sense_factor() < 0.85 and world.predators.sense_factor() < 0.85, "rain blunts the hunters' senses", w.sense_factor())
+	player.thirst = 50.0
+	GameState.in_game = true
+	await wait(3.0)
+	check(player.thirst > 50.0 - 0.235 * player.drain_mult * 3.0 + 0.1, "rain slows thirst", player.thirst)
+	w.set_state(Weather.State.STORM, true)
+	w.strike()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(w.flash > 0.5 and dn.flash > 0.5, "lightning flashes in a storm", w.flash)
+	check((w._loop.stream as AudioStreamWAV).data.size() > 100000, "rain sound generated", (w._loop.stream as AudioStreamWAV).data.size())
+	w.set_state(Weather.State.CLEAR, true)
+	await wait(0.4)
+	check(not w._rain.emitting and absf(dn.sun.light_energy - sun_clear) < 0.05, "weather clears again")
+	w.auto = true
+	w.storminess = 1.0
+	w._timer = 0.1
+	await wait(0.5)
+	check(w.state != Weather.State.CLEAR, "weather changes by itself over time", w.state_name())
+	w.auto = false
+	w.set_state(Weather.State.CLEAR, true)
+
+	print("\n-- expansion: birds")
+	var birds := world.birds
+	check(birds.count("hawk") >= 4 and birds.count("crow") >= 12, "hawks and crows in the sky", "%d hawks, %d crows" % [birds.count("hawk"), birds.count("crow")])
+	var b0: Vector3 = (birds.birds[0]["node"] as Node3D).position
+	await wait(1.0)
+	var b1: Vector3 = (birds.birds[0]["node"] as Node3D).position
+	check(b0.distance_to(b1) > 3.0 and b1.y > world.data.height_at(b1.x, b1.z) + 20.0, "birds fly, high above the ground", "moved %.1f m, altitude %.0f m" % [b0.distance_to(b1), b1.y - world.data.height_at(b1.x, b1.z)])
+	check(((birds.birds[0]["rig"] as AnimalRig).anim != null), "bird models animate")
+	birds.gather_over(Vector3(s.x, 0.0, s.y))
+	var gathering := 0
+	for b in birds.birds:
+		if b.has("visit"):
+			gathering += 1
+	check(gathering == 5, "a crow flock gathers above a kill", gathering)
+
+	print("\n-- expansion: new hunters and attacks")
+	world.predators.process_mode = Node.PROCESS_MODE_INHERIT
+	world.predators.allow_hunts = false
+	# a lion next to a deer that stands still must close in, strike, and keep moving between strikes
+	var lion := _first("lion")
+	await _setup_encounter(lion, 14.0)
+	lion.awareness = 1.0
+	lion.last_known = player.global_position
+	lion._on_detected()
+	var start := lion.global_position
+	var hits := 0
+	var path_len := 0.0
+	var prev := lion.global_position
+	var max_lift := 0.0
+	var hp0 := player.health
+	for i in 60 * 9:
+		await get_tree().physics_frame
+		path_len += lion.global_position.distance_to(prev)
+		prev = lion.global_position
+		max_lift = maxf(max_lift, lion.rig.lift)
+		if player.health < hp0 - 1.0:
+			hits += 1
+			hp0 = player.health
+			player.health = player.max_health
+			hp0 = player.health
+	check(hits >= 2, "lion reaches a standing deer and strikes repeatedly", "%d hits in 9 s" % hits)
+	check(path_len > 14.0 + 3.0, "lion keeps prowling between strikes instead of standing still", "path %.1f m" % path_len)
+	check(max_lift > 0.15, "the strike is a visible leap", max_lift)
+	restore_stats()
+	# idle hunters come looking for the deer
+	isolate()
+	var roamer_src := _first("tiger")
+	roamer_src.process_mode = Node.PROCESS_MODE_INHERIT
+	place(roamer_src, s.x + 150.0, s.y)
+	teleport(s.x, s.y)
+	var d_before := roamer_src.global_position.distance_to(player.global_position)
+	var roamer := world.predators.send_roamer()
+	check(roamer == roamer_src and roamer.has_target and Vector2(roamer.move_target.x, roamer.move_target.z).distance_to(Vector2(s.x, s.y)) < 50.0,
+		"an idle hunter is sent prowling toward the deer's area", "from %.0f m" % d_before)
+	check(world.predators.roam_interval > 20.0, "hunters roam toward the deer on a timer", world.predators.roam_interval)
+	place(roamer_src, -430.0, -400.0)
+	roamer_src.process_mode = Node.PROCESS_MODE_DISABLED
+	# crocodile ambush
+	var croc := _first("crocodile")
+	check(croc != null and croc.rig.anim != null and croc.rig.has("Walk"), "crocodile exists and animates")
+	await _setup_encounter(croc, 7.0, 1, true)
+	hp0 = player.health
+	await wait(6.0)
+	check(player.health < hp0, "crocodile lunges at a deer that comes close", "%.0f -> %.0f, state %s" % [hp0, player.health, croc.state_name()])
+	restore_stats()
+	place(croc, -400.0, -400.0)
+	# wolves (level 3 onward)
+	GameState.level = 2
+	main.start_game()
+	await wait(0.3)
+	check(_count("wolf") >= 3 and world.predators.predators.size() > lvl1, "wolves join from level 3 and the roster grows", "%d wolves, %d hunters (level 1: %d)" % [_count("wolf"), world.predators.predators.size(), lvl1])
+	check(GameState.stacks("swift") >= 1 and player.speed_mult > 1.2 and GameState.has_ability("night_vision"), "gifts are kept from level to level", player.speed_mult)
+	var wolf := _first("wolf")
+	check(absf(wolf.run_speed - 10.6 * 0.95) < 0.01, "level difficulty scales hunter speed", wolf.run_speed)
+	await _setup_encounter(wolf, 20.0)
+	wolf.awareness = 1.0
+	wolf.last_known = player.global_position
+	wolf._on_detected()
+	hp0 = player.health
+	await wait(6.0)
+	check(player.health < hp0, "wolf runs the deer down and bites", "%.0f -> %.0f" % [hp0, player.health])
+	restore_stats()
+	isolate()
+	# wildlife spotting: look straight at a tiger
+	var tiger := _first("tiger")
+	check(tiger != null, "tiger is in the level")
+	teleport(s.x, s.y)
+	place(tiger, s.x, s.y - 12.0)
+	tiger.process_mode = Node.PROCESS_MODE_DISABLED
+	world.camera.rotation.y = 0.0
+	world.camera.snap_to_target()
+	GameState.spotted.erase("Tiger")
+	var boar := _prey_of("boar")
+	_place_prey(boar, s.x + 3.0, s.y - 10.0)
+	GameState.spotted.erase("Boar")
+	await wait(1.2)
+	check(GameState.spotted.has("Tiger"), "seeing a tiger is recorded (wildlife spotted)", GameState.spotted.keys())
+	check(GameState.spotted.has("Boar"), "seeing a boar is recorded", GameState.spotted.keys())
+	place(tiger, -420.0, -420.0)
+
+	print("\n-- expansion: level completion")
+	restore_stats()
+	GameState.level = 0
+	main.start_game()
+	await wait(0.3)
+	world.predators.process_mode = Node.PROCESS_MODE_DISABLED
+	check(hud._goal_title.text.begins_with("Level 1") and hud._goal_plants.text.contains("/ 2"), "HUD shows the level goal", "%s | %s | %s" % [hud._goal_title.text, hud._goal_time.text, hud._goal_plants.text])
+	GameState.time_survived = GameState.goal_seconds() + 1.0
+	await wait(0.3)
+	check(main.flow == 2, "time alone does not finish a level")
+	GameState.plants_found = 2
+	await wait(0.3)
+	check(main.flow == 5 and main.menus.current_screen() == "won" and GameState.unlocked >= 1, "goal met: level complete screen, next level unlocked", main.menus.current_screen())
+	main.menus.next_level_requested.emit()
+	await wait(0.4)
+	check(main.flow == 2 and GameState.level == 1 and GameState.plants_found == 0 and GameState.time_survived < 2.0, "next level starts fresh", "level %d" % (GameState.level + 1))
+	check(absf(world.day_night.time_of_day - float(GameState.LEVELS[1]["start"])) < 0.2, "level sets its own time of day", world.day_night.time_of_day)
+	# the last level is far harder than the first
+	GameState.level = GameState.LEVELS.size() - 1
+	main.start_game()
+	await wait(0.4)
+	world.predators.process_mode = Node.PROCESS_MODE_DISABLED
+	check(world.predators.predators.size() >= lvl1 * 4 and _first("lion").attack_damage > 34.0 * 1.5, "final level: many more, much stronger hunters",
+		"%d hunters, lion damage %.0f" % [world.predators.predators.size(), _first("lion").attack_damage])
+	GameState.time_survived = GameState.goal_seconds() + 1.0
+	GameState.plants_found = 99
+	await wait(0.3)
+	check(main.flow == 5 and main.menus._won_title.text.contains("RULE"), "beating the last level ends the campaign")
+	# endless mode still works and keeps the classic cast
+	main.menus.menu_requested.emit()
+	await wait(0.3)
+	GameState.set_mode(GameState.Mode.ENDLESS)
+	main.start_game()
+	await wait(0.3)
+	check(GameState.mode == GameState.Mode.ENDLESS and _count("lion") == 5 and _count("tiger") == 5 and _count("cheetah") == 4 and _count("hyena") == 8
+		and _count("wolf") == 3 and _count("crocodile") >= 3, "endless survival keeps the full classic roster plus wolves and crocodiles", world.predators.predators.size())
+	check(GameState.abilities.is_empty() and absf(player.speed_mult - GameState.SWIFT_START) < 0.001, "endless run starts without gifts")
+	GameState.set_mode(GameState.Mode.CAMPAIGN)
+	check(GameState.has_ability("night_vision"), "campaign gifts are kept while playing endless")
+	main.menus.menu_requested.emit()
+	await wait(0.3)
+	GameState.test_mode = true

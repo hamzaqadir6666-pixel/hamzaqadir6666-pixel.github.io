@@ -11,6 +11,10 @@ lions, tigers, cheetahs and hyenas hunt you through a full day / night cycle.
    The first open imports all models, textures and audio (about a minute or two).
 3. Press **F5** (Run Project). The main scene is `res://scenes/main.tscn`.
 
+The game opens in a normal **resizable window** (title bar, minimise / maximise / close, drag to move,
+drag the edges to resize). **F11** or **Alt+Enter** switches to fullscreen and back, and
+Settings > Graphics > *Window* offers Window / Maximised window / Fullscreen.
+
 World generation takes a few seconds at start-up (loading bar), after which the main menu appears
 over the live jungle.
 
@@ -94,6 +98,32 @@ that spots one will hunt it. A predator that makes a kill stays to feed for a wh
 watchful - a good moment to slip past. A herd suddenly running is a warning that something is near.
 Killed animals are replaced elsewhere in the jungle after a while.
 
+## Campaign, rare plants and weather
+
+- **Levels.** *Play* runs an eight-level campaign. Each level asks you to survive a set time and to
+  eat a number of rare plants; later levels bring more, faster and harder-hitting hunters, dusk and
+  night starts, drought and storms. Levels 7 (*Blood Moon*) and 8 (*Apex*) are meant to be extremely
+  hard. *Choose Level* replays any level reached; *Endless Survival* is the original open-ended run.
+  The table is `GameState.LEVELS`.
+- **Random start.** The deer begins every game somewhere different (dry, open, level ground with no
+  hunter nearby).
+- **Slow start, speed from food.** A new deer runs at 80 % speed. Every *Swift Clover* adds 3.5 %
+  for good, up to about 125 %.
+- **Rare glowing plants** (scattered afresh each game, many hidden in cover; walk up and press E):
+  Swift Clover (speed), Moonpetal (**night vision**), Ironbark Root (max health), Sunberry (max
+  stamina), Ghost Fern (silent steps), Owl-eye Mushroom (sense the nearest hunter), Spring Lily (higher
+  jump), Lotus Root (fast, tireless swimming), Healing Herb, Wild Honeycomb - and the poisonous Red
+  Toadstool. Gifts are kept from level to level and saved in `user://records.cfg`.
+- **Weather.** Clear, overcast, rain and storm come and go: rain streaks and splashes, a darker sky,
+  thicker air, a rain loop, thunder and lightning. Rain cuts every hunter's sight and hearing by up to
+  a third and slowly quenches thirst.
+- **More wildlife.** Wolves (tireless pack, from level 3) and crocodiles (ambush at the water's
+  edge) join lion, tiger, cheetah and hyena. Gazelle, boar, goats, buffalo, foxes and junglefowl
+  graze the map; hawks soar over the clearings and crows gather above a fresh kill. The HUD counts the
+  species you have actually seen (*Wildlife seen n / 14*).
+- **HUD.** Health, stamina, food and water are shown with heart, bolt, leaf and droplet icons; a row
+  of ability icons lights up as gifts are found; the level goal, weather and clock sit top-left.
+
 ## Project layout
 
 ```
@@ -134,12 +164,19 @@ wild-survival/
   without physics or animation.
 - One-shot sounds go through pooled 2D / 3D players.
 - Settings > Graphics has Low / Medium / High / Ultra presets plus individual toggles.
+- **Low-end PCs.** On first launch the preset is chosen from the graphics adapter and core count
+  (integrated graphics start on Low or Medium). *Low* renders 3D at 65 % resolution with FSR
+  upscaling, a 1024 px two-split shadow map, no SSAO, no volumetric fog, no animal shadows, 30 % grass,
+  55 % vegetation distance and a quarter of the rain particles. *Auto performance* (on by default)
+  watches the frame rate in game and, below about 27 fps, lowers render scale and then the preset.
+  The UI is always drawn at full resolution.
 
 ## Automated tests
 
 `scenes/tests/test_runner.tscn` runs the real game headless and drives it with simulated input
-(259 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
-behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart):
+(351 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
+behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart,
+levels, random spawn, rare plants and abilities, night vision, weather, birds, new hunters, window settings):
 
 ```
 godot --headless --import
@@ -153,7 +190,7 @@ This project was developed in a sandbox with no GPU or display. Godot 4.7.2 was 
 there and used headless, so:
 
 - **Verified**: every asset imports; all scripts compile; all shaders compile; the test suite above
-  passes (259/259); a 20-minute unscripted soak run produced no script errors.
+  passes (351/351); 8-minute unscripted soak runs of campaign level 3 produced no script errors.
 - **Not verified on a device**: the Android export and the touch controls on a real touchscreen
   (they are tested with simulated touch events only).
 - **Not verified**: anything that needs eyes or ears. The game has never been rendered to a screen,
@@ -165,3 +202,12 @@ there and used headless, so:
 
 Code: MIT. Assets: see `CREDITS.md` — most art and audio is CC BY-SA 3.0 (Wildfire Games, 0 A.D.), which
 requires attribution and that derived assets stay under the same license.
+
+### Notes on the expansion (levels, weather, new animals)
+
+- The new animals (wolf, crocodile, goat, buffalo, fox, junglefowl, hawk, crow) come from the same
+  0 A.D. set as the gazelle and boar and only have Idle and Walk (or flight) clips. Their run is the
+  walk cycle played faster, and wolf / crocodile attacks are a procedural lunge rather than a
+  dedicated attack animation. The lion, tiger, cheetah and hyena models are unchanged.
+- Rain, lightning, night vision brightness, the HUD icons and the window behaviour have been checked
+  by the headless tests only (values, state, layout) - never looked at on a screen.

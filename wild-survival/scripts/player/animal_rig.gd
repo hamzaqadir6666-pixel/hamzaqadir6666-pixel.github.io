@@ -46,6 +46,9 @@ func setup(model_path: String, model_scale: float, aliases: Dictionary = {}, fac
 	for alias: String in aliases:
 		if not anim.has_animation(alias) and anim.has_animation(aliases[alias]):
 			lib.add_animation(alias, anim.get_animation(aliases[alias]))
+			if _strides.has(aliases[alias]) and not _strides.has(alias):
+				_strides = _strides.duplicate()
+				_strides[alias] = _strides[aliases[alias]]
 	for m in model.find_children("*", "MeshInstance3D", true, false):
 		var mi := m as MeshInstance3D
 		mi.extra_cull_margin = 2.0

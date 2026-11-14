@@ -14,8 +14,28 @@ const KINDS := {
 	},
 	"boar": {
 		"name": "Boar", "model": "res://models/animals/boar.glb", "scale": 0.43,
-		"walk": 1.1, "run": 9.2, "accel": 8.0, "turn": 4.0, "alarm": 17.0, "stamina": 11.0,
+		"walk": 1.1, "run": 9.2, "accel": 8.0, "turn": 4.0, "alarm": 14.0, "stamina": 11.0,
 		"radius": 0.38, "length": 1.4, "pitch": 0.8,
+	},
+	"goat": {
+		"name": "Goat", "model": "res://models/animals/goat.glb", "scale": 0.31,
+		"walk": 1.0, "run": 10.5, "accel": 10.0, "turn": 5.5, "alarm": 20.0, "stamina": 13.0,
+		"radius": 0.3, "length": 1.0, "pitch": 1.1,
+	},
+	"buffalo": {
+		"name": "Buffalo", "model": "res://models/animals/zebu.glb", "scale": 0.43,
+		"walk": 0.9, "run": 8.4, "accel": 6.0, "turn": 3.0, "alarm": 12.0, "stamina": 14.0,
+		"radius": 0.55, "length": 2.2, "pitch": 0.6, "deer_shy": 0.5,
+	},
+	"fox": {
+		"name": "Fox", "model": "res://models/animals/fox.glb", "scale": 0.33,
+		"walk": 1.4, "run": 11.5, "accel": 12.0, "turn": 6.5, "alarm": 24.0, "stamina": 12.0,
+		"radius": 0.22, "length": 0.8, "pitch": 1.5, "deer_shy": 1.3,
+	},
+	"junglefowl": {
+		"name": "Junglefowl", "model": "res://models/animals/chicken.glb", "scale": 0.24,
+		"walk": 0.7, "run": 6.5, "accel": 14.0, "turn": 8.0, "alarm": 11.0, "stamina": 6.0,
+		"radius": 0.16, "length": 0.4, "pitch": 1.9, "deer_shy": 0.8,
 	},
 }
 
@@ -251,7 +271,7 @@ func _watch(_dt: float) -> void:
 		return
 	if player != null and not player.is_dead():
 		var d := global_position.distance_to(player.global_position)
-		var r := 3.5 if player.is_sneaking else (11.0 if player.is_sprinting else 7.0)
+		var r := (3.5 if player.is_sneaking else (11.0 if player.is_sprinting else 7.0)) * float(_cfg.get("deer_shy", 1.0))
 		if d < r:
 			startle(player.global_position)
 
