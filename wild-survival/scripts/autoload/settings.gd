@@ -16,6 +16,7 @@ const ACTIONS := {
 	"jump": ["Jump", KEY_SPACE],
 	"interact": ["Graze / Drink", KEY_E],
 	"pause": ["Pause", KEY_ESCAPE],
+	"map": ["Map", KEY_M],
 }
 
 const DEFAULTS := {

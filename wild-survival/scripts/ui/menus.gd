@@ -187,6 +187,7 @@ func _build_main() -> void:
 		"",
 		"F11 or Alt+Enter switches fullscreen / window. The window can be resized and moved freely.",
 		"",
+		"M opens the map. Thickets, landmarks and rare plants are marked only once you have found them.",
 		"Each LEVEL asks you to survive for a time and to find rare glowing plants.",
 		"SWIFT CLOVER makes you faster for good - you start slow, so look for it first.",
 		"MOONPETAL gives night vision. Other plants give health, stamina, silence, senses, leaping,",

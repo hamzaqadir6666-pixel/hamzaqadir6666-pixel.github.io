@@ -40,6 +40,10 @@ var _weather_label: Label
 var _wildlife: Label
 var _sense: Label
 var weather: Weather
+var minimap: Minimap
+var full_map: Minimap
+var _map_box: PanelContainer
+const MINIMAP_SIZE := 190.0
 var forage: Forage
 
 const STAT_ICONS := [["health", "heart", "Health"], ["stamina", "bolt", "Stamina"], ["hunger", "leaf", "Food"], ["thirst", "drop", "Water"]]
@@ -218,6 +222,26 @@ func _ready() -> void:
 	_notes.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_notes)
 
+	# --- minimap (top right) and the full map (M)
+	minimap = Minimap.new()
+	minimap.name = "Minimap"
+	minimap.custom_minimum_size = Vector2(MINIMAP_SIZE, MINIMAP_SIZE)
+	_root.add_child(minimap)
+	_map_box = PanelContainer.new()
+	_map_box.add_theme_stylebox_override("panel", UITheme.box(Color(0.04, 0.06, 0.04, 0.9), 8, 2, UITheme.EDGE, 10.0))
+	_map_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_map_box)
+	var mv := VBoxContainer.new()
+	mv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_map_box.add_child(mv)
+	mv.add_child(UITheme.label("MAP  -  only what you have discovered is marked", 16, UITheme.ACCENT))
+	full_map = Minimap.new()
+	full_map.name = "FullMap"
+	full_map.full = true
+	full_map.custom_minimum_size = Vector2(640, 640)
+	mv.add_child(full_map)
+	_map_box.hide()
+
 	# --- touch controls (phones / tablets); the bars move up out of the left thumb's way
 	_stats = stats
 	touch = TouchControls.new()
@@ -228,6 +252,11 @@ func _ready() -> void:
 			_apply_touch_layout())
 	_apply_touch_layout()
 
+	# dark outline on all HUD text so it stays readable over bright grass and trees
+	for l: Label in _root.find_children("*", "Label", true, false):
+		if l.get_theme_constant("outline_size") == 0:
+			l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+			l.add_theme_constant_override("outline_size", 5)
 	GameState.notification_posted.connect(_on_notification)
 	GameState.threat_changed.connect(_on_threat_changed)
 
@@ -238,12 +267,14 @@ func _apply_touch_layout() -> void:
 	if Settings.touch_active():
 		_dock(_stats, Control.PRESET_TOP_LEFT, Vector2(300, 22))
 		_dock(_status, Control.PRESET_TOP_LEFT, Vector2(302, 222))
-		_dock(_notes, Control.PRESET_TOP_RIGHT, Vector2(-28, 140))
+		_dock(minimap, Control.PRESET_TOP_RIGHT, Vector2(-28, 140))
+		_dock(_notes, Control.PRESET_TOP_RIGHT, Vector2(-28, 150 + MINIMAP_SIZE))
 		_dock(_hint, Control.PRESET_CENTER_BOTTOM, Vector2(0, -80))
 	else:
 		_dock(_stats, Control.PRESET_BOTTOM_LEFT, Vector2(28, -28))
 		_dock(_status, Control.PRESET_BOTTOM_LEFT, Vector2(30, -236))
-		_dock(_notes, Control.PRESET_TOP_RIGHT, Vector2(-28, 24))
+		_dock(minimap, Control.PRESET_TOP_RIGHT, Vector2(-28, 24))
+		_dock(_notes, Control.PRESET_TOP_RIGHT, Vector2(-28, 34 + MINIMAP_SIZE))
 		_dock(_hint, Control.PRESET_CENTER_BOTTOM, Vector2(0, -120))
 
 
@@ -251,6 +282,11 @@ func _apply_touch_layout() -> void:
 ## Works through anchors and offsets, so it is correct whatever the screen size is.
 func _dock(c: Control, preset: Control.LayoutPreset, nudge: Vector2) -> void:
 	c.set_anchors_and_offsets_preset(preset, Control.PRESET_MODE_MINSIZE)
+	if c == minimap:
+		c.offset_left = -MINIMAP_SIZE
+		c.offset_right = 0.0
+		c.offset_top = 0.0
+		c.offset_bottom = MINIMAP_SIZE
 	c.offset_left += nudge.x
 	c.offset_right += nudge.x
 	c.offset_top += nudge.y
@@ -265,6 +301,28 @@ func bind(p_player: Player, p_day_night: DayNight, p_predators: PredatorManager,
 	camera = p_camera
 	player.damaged.connect(_on_damaged)
 	player.interaction_changed.connect(func(text: String) -> void: _hint.text = text)
+
+
+## Called by the game flow once the world exists.
+func bind_map(world: GameWorld) -> void:
+	minimap.setup(world.data, world.player, world.forage, world.predators, world.map_texture)
+	full_map.setup(world.data, world.player, world.forage, world.predators, world.map_texture)
+
+
+func toggle_full_map() -> void:
+	_map_box.visible = not _map_box.visible
+	if _map_box.visible:
+		# as large as fits on the screen
+		var side := clampf(minf(_root.size.x, _root.size.y) - 150.0, 240.0, 760.0)
+		full_map.custom_minimum_size = Vector2(side, side)
+		var box := Vector2(side + 24.0, side + 52.0)
+		_map_box.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		_map_box.position = ((_root.size - box) * 0.5).floor()
+		_map_box.size = box
+
+
+func is_full_map_open() -> bool:
+	return _map_box.visible
 
 
 func _on_damaged(amount: float, _source: String) -> void:
@@ -308,6 +366,8 @@ func notification_count() -> int:
 func _process(delta: float) -> void:
 	if player == null:
 		return
+	if visible and Input.is_action_just_pressed("map"):
+		toggle_full_map()
 	var k := minf(delta * 8.0, 1.0)
 	var values := {
 		"health": player.health / player.max_health * 100.0,

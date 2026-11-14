@@ -38,6 +38,7 @@ func _ready() -> void:
 	hud.bind(world.player, world.day_night, world.predators, world.camera)
 	hud.weather = world.weather
 	hud.forage = world.forage
+	hud.bind_map(world)
 	hud.visible = false
 	world.player.died.connect(_on_player_died)
 	world.day_night.day_passed.connect(_on_day_passed)
@@ -74,6 +75,7 @@ func start_game() -> void:
 	GameState.in_game = true
 	_death_timer = -1.0
 	world.begin_run()
+	hud._map_box.hide()
 	world.camera.input_enabled = true
 	hud.visible = true
 	menus.hide_all()

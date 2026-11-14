@@ -276,6 +276,9 @@ func _run() -> void:
 	if OS.get_environment("WS_STRIDES") != "":
 		measure_strides()
 		return
+	if OS.get_environment("WS_MAP") != "":
+		export_map(OS.get_environment("WS_MAP"))
+		return
 	# wild-prey hunts are switched on only inside the prey tests, so they cannot disturb the others
 	world.predators.allow_hunts = false
 	if OS.get_environment("WS_PROBE") != "":
@@ -1683,6 +1686,55 @@ func test_expansion() -> void:
 	var moon := forage.nearest(player.global_position, 2000.0, "moonpetal")
 	var start_moon := forage.nearest(Vector3(world.data.run_spawn.x, 0.0, world.data.run_spawn.y), 2000.0, "moonpetal")
 	check(Vector2(start_moon["pos"].x, start_moon["pos"].z).distance_to(world.data.run_spawn) < 90.0, "a Moonpetal grows within reach of the start")
+	# --- minimap: plants stay hidden until the deer has found them
+	print("\n-- expansion: minimap")
+	check(hud.minimap != null and hud.minimap.texture != null and hud.minimap.texture.get_width() == 512, "minimap has a picture of the world")
+	check(hud.minimap.is_visible_in_tree() and _on_screen(hud.minimap) and hud.minimap.get_global_rect().position.x > hud._root.size.x * 0.7, "minimap sits top right, on screen", hud.minimap.get_global_rect())
+	check(not hud.minimap.get_global_rect().intersects(hud._notes.get_global_rect()), "notifications sit below the minimap")
+	var water_px := world.map_texture.get_image().get_pixelv(Vector2i(WorldMap.to_uv(-285.0, -170.0) * 512.0))
+	check(water_px.b > water_px.g and water_px.b > water_px.r, "lake is drawn blue on the map", water_px)
+	teleport(s.x, s.y)
+	for it0 in forage.items:
+		it0["seen"] = false
+	GameState.discoveries.clear()
+	await wait(0.5)
+	var far_clover := forage.nearest(player.global_position, 2000.0, "clover")
+	var plant_marks := func() -> int:
+		var n := 0
+		for m in hud.minimap.markers():
+			if m["shape"] == "dot":
+				n += 1
+		return n
+	var seen_near := 0
+	for it1 in forage.items:
+		if it1["seen"]:
+			seen_near += 1
+	check(plant_marks.call() == seen_near and seen_near < 4, "undiscovered rare plants are not on the map", "%d marked of %d plants" % [plant_marks.call(), forage.items.size()])
+	check(hud.minimap.markers().filter(func(m: Dictionary) -> bool: return m["shape"] == "ring").is_empty(), "undiscovered thickets are not on the map")
+	var fp: Vector3 = far_clover["pos"]
+	teleport(fp.x + 15.0, fp.z)
+	await wait(0.6)
+	check(far_clover["seen"] and plant_marks.call() >= 1, "a rare plant appears on the map once the deer comes near it", plant_marks.call())
+	var named := false
+	for m2 in hud.minimap.markers():
+		named = named or m2["name"] == "Swift Clover"
+	check(named, "the marker knows which plant it is")
+	var g0: Dictionary = world.data.groves[0]
+	teleport(g0["center"].x, g0["center"].y)
+	await wait(0.7)
+	check(hud.minimap.markers().filter(func(m: Dictionary) -> bool: return m["shape"] == "ring").size() == 1, "a safe thicket is marked after it is discovered")
+	Input.action_press("map")
+	await wait(0.2)
+	Input.action_release("map")
+	check(hud.is_full_map_open() and _on_screen(hud._map_box) and hud.full_map.size.x > 230.0, "M opens the full map, on screen", hud._map_box.get_global_rect())
+	Input.action_press("map")
+	await wait(0.2)
+	Input.action_release("map")
+	check(not hud.is_full_map_open(), "M closes it again")
+	var fixed_before: Array = []
+	for i in forage.fixed_count:
+		fixed_before.append(forage.items[i]["pos"])
+	check(forage.fixed_count > 60, "most rare plants have fixed places", forage.fixed_count)
 	# walk up to a clover and eat it with the interact key
 	var clover := forage.nearest(player.global_position, 2000.0, "clover")
 	var cp: Vector3 = clover["pos"]
@@ -1692,6 +1744,7 @@ func test_expansion() -> void:
 	Input.action_press("interact")
 	await wait(0.4)
 	release_all()
+	check(not hud.minimap.markers().any(func(m: Dictionary) -> bool: return m["shape"] == "dot" and (m["pos"] as Vector2).distance_to(Vector2(cp.x, cp.z)) < 0.5), "an eaten plant leaves the map")
 	check(clover["eaten"] and GameState.stacks("swift") == 1 and player.speed_mult > GameState.SWIFT_START + 0.03, "eating Swift Clover makes the deer faster", player.speed_mult)
 	check(GameState.plants_found == 1, "rare plant counted toward the level goal", GameState.plants_found)
 	Input.action_press("move_forward")
@@ -1864,6 +1917,10 @@ func test_expansion() -> void:
 	GameState.level = 2
 	main.start_game()
 	await wait(0.3)
+	var same := world.forage.fixed_count == fixed_before.size()
+	for i in mini(world.forage.fixed_count, fixed_before.size()):
+		same = same and (world.forage.items[i]["pos"] as Vector3).distance_to(fixed_before[i]) < 0.01
+	check(same, "rare plants grow in the same places every game and level (the printed map stays true)")
 	check(_count("wolf") >= 3 and world.predators.predators.size() > lvl1, "wolves join from level 3 and the roster grows", "%d wolves, %d hunters (level 1: %d)" % [_count("wolf"), world.predators.predators.size(), lvl1])
 	check(GameState.stacks("swift") >= 1 and player.speed_mult > 1.2 and GameState.has_ability("night_vision"), "gifts are kept from level to level", player.speed_mult)
 	var wolf := _first("wolf")
@@ -1936,3 +1993,32 @@ func test_expansion() -> void:
 	main.menus.menu_requested.emit()
 	await wait(0.3)
 	GameState.test_mode = true
+
+
+## WS_MAP=<folder>: write the world picture (1 pixel per metre) and the positions of everything on
+## it, for drawing the full "everything visible" map outside the game.
+func export_map(dir: String) -> void:
+	DirAccess.make_dir_recursive_absolute(dir)
+	WorldMap.build_image(world.data, 1024).save_png(dir.path_join("base.png"))
+	world.forage.scatter(world.data.spawn_point)
+	var plants: Array = []
+	for i in world.forage.fixed_count:
+		var it: Dictionary = world.forage.items[i]
+		plants.append({"kind": it["kind"], "name": it["name"], "x": it["pos"].x, "z": it["pos"].z})
+	var out := {"plants": plants, "groves": [], "pois": [], "lakes": [], "clearings": []}
+	for g in world.data.groves:
+		out["groves"].append({"name": g["name"], "x": g["center"].x, "z": g["center"].y})
+	for p in world.data.pois:
+		out["pois"].append({"name": p["name"], "type": p["type"], "x": p["pos"].x, "z": p["pos"].y})
+	for l in world.data.lakes:
+		out["lakes"].append({"name": l["name"], "x": l["center"].x, "z": l["center"].y})
+	for c in world.data.clearings:
+		out["clearings"].append({"x": c["center"].x, "z": c["center"].y})
+	var colors := {}
+	for k: String in WorldMap.PLANT_COLORS:
+		colors[k] = (WorldMap.PLANT_COLORS[k] as Color).to_html(false)
+	out["colors"] = colors
+	var f := FileAccess.open(dir.path_join("map.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(out, "  "))
+	f.close()
+	print("[info] map exported to ", dir)

@@ -174,7 +174,7 @@ wild-survival/
 ## Automated tests
 
 `scenes/tests/test_runner.tscn` runs the real game headless and drives it with simulated input
-(351 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
+(365 checks: world generation, menus, movement, collisions, survival stats, stealth, each predator's
 behaviour, escape / search / return, touch controls, day-night, audio, pause, settings, death and restart,
 levels, random spawn, rare plants and abilities, night vision, weather, birds, new hunters, window settings):
 
@@ -190,7 +190,7 @@ This project was developed in a sandbox with no GPU or display. Godot 4.7.2 was 
 there and used headless, so:
 
 - **Verified**: every asset imports; all scripts compile; all shaders compile; the test suite above
-  passes (351/351); 8-minute unscripted soak runs of campaign level 3 produced no script errors.
+  passes (365/365); 8-minute unscripted soak runs of campaign level 3 produced no script errors.
 - **Not verified on a device**: the Android export and the touch controls on a real touchscreen
   (they are tested with simulated touch events only).
 - **Not verified**: anything that needs eyes or ears. The game has never been rendered to a screen,
@@ -211,3 +211,10 @@ requires attribution and that derived assets stay under the same license.
   dedicated attack animation. The lion, tiger, cheetah and hyena models are unchanged.
 - Rain, lightning, night vision brightness, the HUD icons and the window behaviour have been checked
   by the headless tests only (values, state, layout) - never looked at on a screen.
+
+## Minimap
+
+A minimap sits in the top right corner; press **M** for the full map. Rare plants are not marked
+until the deer has come within 22 m of one (or eaten it). Safe thickets and landmarks appear once
+discovered. Rare plants grow in the same places every game, apart from five extra ones near the
+random start point. `full-map.png` is a test map showing every fixed plant.

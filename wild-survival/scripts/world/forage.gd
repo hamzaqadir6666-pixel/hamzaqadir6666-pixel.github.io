@@ -39,6 +39,13 @@ var _rng := RandomNumberGenerator.new()
 var _meshes: Dictionary = {}
 var _mats: Dictionary = {}
 var _time := 0.0
+var player: Player
+var _notice := 0.0
+var fixed_count := 0            ## the first `fixed_count` items are the same every game
+const NOTICE_RANGE := 22.0      ## the deer notices a rare plant from this far; then it shows on the map
+## The plants grow in the same places every game (so a map of them stays true); only the few extra
+## ones near the deer's random starting point differ.
+const FIXED_SEED := 7000
 
 
 func setup(p_world: WorldData) -> void:
@@ -52,15 +59,15 @@ func scatter(near: Vector2, seed_value := 0) -> void:
 	for it in items:
 		(it["node"] as Node3D).queue_free()
 	items.clear()
-	if seed_value == 0:
-		_rng.randomize()
-	else:
-		_rng.seed = seed_value
+	_rng.seed = seed_value if seed_value != 0 else FIXED_SEED
 	for kind: String in KINDS:
 		var cfg: Dictionary = KINDS[kind]
 		for i in int(cfg["count"]):
 			var p := _find_spot(String(cfg["where"]), Vector2.ZERO, WorldData.PLAY_LIMIT * 0.86, 0.0)
 			_add(kind, p)
+	fixed_count = items.size()
+	if seed_value == 0:
+		_rng.randomize()
 	_add("moonpetal", _find_spot("any", near, 75.0, 30.0))
 	_add("clover", _find_spot("any", near, 45.0, 14.0))
 	_add("clover", _find_spot("any", near, 90.0, 40.0))
@@ -101,7 +108,7 @@ func _add(kind: String, p: Vector2) -> void:
 	node.position = pos
 	node.rotation.y = _rng.randf() * TAU
 	add_child(node)
-	items.append({"kind": kind, "name": cfg["name"], "pos": pos, "node": node, "eaten": false})
+	items.append({"kind": kind, "name": cfg["name"], "pos": pos, "node": node, "eaten": false, "seen": false})
 
 
 func _mat(color: Color, glow: float) -> StandardMaterial3D:
@@ -227,6 +234,13 @@ func _build(kind: String, cfg: Dictionary) -> Node3D:
 func _process(delta: float) -> void:
 	# gentle bob so the plants catch the eye
 	_time += delta
+	_notice -= delta
+	if _notice <= 0.0 and player != null:
+		_notice = 0.3
+		var here := player.global_position
+		for it2 in items:
+			if not it2["seen"] and (it2["pos"] as Vector3).distance_squared_to(here) < NOTICE_RANGE * NOTICE_RANGE:
+				it2["seen"] = true
 	var i := 0
 	for it in items:
 		if not it["eaten"]:
@@ -261,6 +275,7 @@ func eat(item: Dictionary, player: Player) -> void:
 	if item["eaten"]:
 		return
 	item["eaten"] = true
+	item["seen"] = true
 	(item["node"] as Node3D).visible = false
 	var kind: String = item["kind"]
 	var cfg: Dictionary = KINDS[kind]

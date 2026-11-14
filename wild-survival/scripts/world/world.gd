@@ -24,6 +24,7 @@ var prey: PreyManager
 var weather: Weather
 var forage: Forage
 var birds: Birds
+var map_texture: ImageTexture
 var _rng := RandomNumberGenerator.new()
 var _spot_timer := 0.0
 var built := false
@@ -131,6 +132,10 @@ func build(seed_value := 20260) -> void:
 	forage.setup(data)
 	forage.scatter(data.spawn_point)
 	player.forage = forage
+	forage.player = player
+	loading.emit("Drawing the map...", 0.95)
+	await get_tree().process_frame
+	map_texture = ImageTexture.create_from_image(WorldMap.build_image(data, 512))
 
 	birds = Birds.new()
 	birds.name = "Birds"
